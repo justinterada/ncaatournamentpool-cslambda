@@ -1,7 +1,7 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Transform": "AWS::Serverless-2016-10-31",
-  "Description": "An AWS Serverless Application that uses the ASP.NET Core framework running in Amazon Lambda.",
+  "Description": "A lifted and shifted NCAA Tournament Pool draft application",
   "Parameters": {},
   "Conditions": {},
   "Resources": {
@@ -22,12 +22,9 @@
         "CodeUri": "",
         "MemorySize": 512,
         "Timeout": 30,
-        "Role": null,
-        "Policies": [
-          "AWSLambda_FullAccess"
-        ],
+        "Role": { "Fn::GetAtt": [ "LambdaExecutionRole", "Arn" ] },
         "Environment": {
-          "Variables": {}
+          "Variables": { "ASPNETCORE_ENVIRONMENT": "Development" }
         },
         "Events": {
           "ProxyResource": {
@@ -51,6 +48,66 @@
             }
           }
         }
+      }
+    },
+    "LambdaExecutionRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [ {
+            "Effect": "Allow",
+            "Principal": {
+              "Service": [
+                "lambda.amazonaws.com"
+              ]
+            },
+            "Action": [
+                "sts:AssumeRole"
+            ]
+          } ]
+        },
+        "Path": "/"
+        "Policies": [ {
+          "PolicyName": "LogPolicy",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [ {
+              "Effect": "Allow",
+              "Action": [
+                "logs:*"
+              ],
+              "Resource": "arn:aws:logs:*:*:*"
+            } ]
+          }
+        }, {
+          "PolicyName": "DynamoDbPolicy",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [ {
+              "Effect": "Allow",
+              "Action": [
+                "dynamodb:GetItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:Scan",
+                "dynamodb:DescribeTable",
+              ],
+              "Resource": "arn:aws:dynamodb:*:932737446477:table/ncaatournamentpool-*"
+            } ]
+          }
+        }, {
+          "PolicyName": "LambdaExecutionPolicy",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [ {
+              "Effect": "Allow",
+              "Action": [
+                "lambda:InvokeFunction"
+              ],
+              "Resource": "arn:aws:lambda:*:932737446477:function:ncaatournamentpool-*"
+            } ]
+          }
+        } ]
       }
     }
   },
