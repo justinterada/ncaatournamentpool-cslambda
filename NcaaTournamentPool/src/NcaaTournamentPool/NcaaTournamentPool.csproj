@@ -13,6 +13,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Amazon.Lambda.AspNetCoreServer" Version="7.3.0" />
+    <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.7.101.50" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="wwwroot\images\" />
@@ -23,5 +24,66 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>Never</CopyToPublishDirectory>
     </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="Pages\editteams.aspx" />
+    <None Remove="Pages\runlottery.aspx" />
+    <None Remove="Pages\TeamDisplay.ascx" />
+    <None Remove="Pages\ChooseTeams2.aspx" />
+    <None Remove="Pages\lobby.aspx" />
+    <None Remove="Pages\chooseteams.aspx" />
+    <None Remove="Pages\setupdraft.aspx" />
+    <None Remove="Pages\Matchup.ascx" />
+    <None Remove="Pages\bracketview.aspx" />
+    <None Remove="Pages\cleardraft.aspx" />
+    <None Remove="Pages\chooseuser.aspx" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="wwwroot\css\.svn\entries" />
+    <None Include="wwwroot\css\.svn\all-wcprops" />
+    <None Include="wwwroot\css\.svn\text-base\default.css.svn-base" />
+    <None Include="wwwroot\css\custom-theme\.svn\entries" />
+    <None Include="wwwroot\css\custom-theme\.svn\all-wcprops" />
+    <None Include="wwwroot\css\custom-theme\.svn\text-base\jquery-ui-1.8.10.custom.css.svn-base" />
+    <None Include="wwwroot\css\custom-theme\images\.svn\entries" />
+    <None Include="wwwroot\css\custom-theme\images\.svn\all-wcprops" />
+    <None Include="wwwroot\css\custom-theme\images\.svn\text-base\ui-icons_ef8c08_256x240.png.svn-base" />
+    <None Include="wwwroot\css\custom-theme\images\.svn\text-base\ui-bg_gloss-wave_35_f6a828_500x100.png.svn-base" />
+    <None Include="wwwroot\css\custom-theme\images\.svn\text-base\ui-icons_222222_256x240.png.svn-base" />
+    <None Include="wwwroot\css\custom-theme\images\.svn\text-base\ui-bg_highlight-soft_75_ffe45c_1x100.png.svn-base" />
+    <None Include="wwwroot\css\custom-theme\images\.svn\text-base\ui-bg_glass_100_f6f6f6_1x400.png.svn-base" />
+    <None Include="wwwroot\css\custom-theme\images\.svn\text-base\ui-bg_glass_65_ffffff_1x400.png.svn-base" />
+    <None Include="wwwroot\css\custom-theme\images\.svn\text-base\ui-bg_diagonals-thick_18_b81900_40x40.png.svn-base" />
+    <None Include="wwwroot\css\custom-theme\images\.svn\text-base\ui-icons_ffffff_256x240.png.svn-base" />
+    <None Include="wwwroot\css\custom-theme\images\.svn\text-base\ui-bg_flat_10_000000_40x100.png.svn-base" />
+    <None Include="wwwroot\css\custom-theme\images\.svn\text-base\ui-bg_diagonals-thick_20_666666_40x40.png.svn-base" />
+    <None Include="wwwroot\css\custom-theme\images\.svn\text-base\ui-icons_ffd27a_256x240.png.svn-base" />
+    <None Include="wwwroot\css\custom-theme\images\.svn\text-base\ui-icons_228ef1_256x240.png.svn-base" />
+    <None Include="wwwroot\css\custom-theme\images\.svn\text-base\ui-bg_glass_100_fdf5ce_1x400.png.svn-base" />
+    <None Include="wwwroot\css\custom-theme\images\.svn\text-base\ui-bg_highlight-soft_100_eeeeee_1x100.png.svn-base" />
+    <None Include="wwwroot\css\custom-theme\images\.svn\prop-base\ui-icons_ef8c08_256x240.png.svn-base" />
+    <None Include="wwwroot\css\custom-theme\images\.svn\prop-base\ui-bg_gloss-wave_35_f6a828_500x100.png.svn-base" />
+    <None Include="wwwroot\css\custom-theme\images\.svn\prop-base\ui-icons_222222_256x240.png.svn-base" />
+    <None Include="wwwroot\css\custom-theme\images\.svn\prop-base\ui-bg_highlight-soft_75_ffe45c_1x100.png.svn-base" />
+    <None Include="wwwroot\css\custom-theme\images\.svn\prop-base\ui-bg_glass_100_f6f6f6_1x400.png.svn-base" />
+    <None Include="wwwroot\css\custom-theme\images\.svn\prop-base\ui-bg_glass_65_ffffff_1x400.png.svn-base" />
+    <None Include="wwwroot\css\custom-theme\images\.svn\prop-base\ui-bg_diagonals-thick_18_b81900_40x40.png.svn-base" />
+    <None Include="wwwroot\css\custom-theme\images\.svn\prop-base\ui-icons_ffffff_256x240.png.svn-base" />
+    <None Include="wwwroot\css\custom-theme\images\.svn\prop-base\ui-bg_flat_10_000000_40x100.png.svn-base" />
+    <None Include="wwwroot\css\custom-theme\images\.svn\prop-base\ui-bg_diagonals-thick_20_666666_40x40.png.svn-base" />
+    <None Include="wwwroot\css\custom-theme\images\.svn\prop-base\ui-icons_ffd27a_256x240.png.svn-base" />
+    <None Include="wwwroot\css\custom-theme\images\.svn\prop-base\ui-icons_228ef1_256x240.png.svn-base" />
+    <None Include="wwwroot\css\custom-theme\images\.svn\prop-base\ui-bg_glass_100_fdf5ce_1x400.png.svn-base" />
+    <None Include="wwwroot\css\custom-theme\images\.svn\prop-base\ui-bg_highlight-soft_100_eeeeee_1x100.png.svn-base" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="Pages\bracketview.aspx.cs" />
+    <Compile Remove="Pages\TeamDisplay.ascx.cs" />
+    <Compile Remove="Pages\TeamDisplay.ascx.designer.cs" />
+    <Compile Remove="Pages\Matchup.ascx.cs" />
+    <Compile Remove="Pages\Matchup.ascx.designer.cs" />
+    <Compile Remove="Pages\ChooseTeams2.aspx.designer.cs" />
+    <Compile Remove="Pages\ChooseTeams2.aspx.cs" />
+    <Compile Remove="Pages\chooseteams.aspx.cs" />
   </ItemGroup>
 </Project>
