@@ -1,0 +1,14 @@
+﻿<Matchup Team1="@BracketTeams[1]" Team2="@BracketTeams[16]" />
+<Matchup Team1="@BracketTeams[8]" Team2="@BracketTeams[9]" />
+<Matchup Team1="@BracketTeams[5]" Team2="@BracketTeams[12]" />
+<Matchup Team1="@BracketTeams[4]" Team2="@BracketTeams[13]" />
+<Matchup Team1="@BracketTeams[6]" Team2="@BracketTeams[11]" />
+<Matchup Team1="@BracketTeams[3]" Team2="@BracketTeams[14]" />
+<Matchup Team1="@BracketTeams[7]" Team2="@BracketTeams[10]" />
+<Matchup Team1="@BracketTeams[2]" Team2="@BracketTeams[15]" />
+@code {
+    [Parameter]
+    public Dictionary<int, List<Team>> BracketTeams {
+        get; set;
+    }
+}
