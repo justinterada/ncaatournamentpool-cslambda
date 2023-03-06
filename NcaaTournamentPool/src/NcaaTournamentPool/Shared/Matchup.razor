@@ -3,27 +3,27 @@
         {
     <li class="first">
         <ul class="matchup">
-            <TeamDisplay Team="@Team1[0]" IsFirst="true" IsLast="false" />
-            <TeamDisplay Team="@Team1[1]" IsFirst="false" IsLast="true" />
+            <TeamDisplay Team="@Team1[0]" IsFirst="true" IsLast="false" BackgroundColor="@(Team1[0].pickedByPlayer > 0 ? Players[Team1[0].pickedByPlayer].color : "")" />
+            <TeamDisplay Team="@Team1[1]" IsFirst="false" IsLast="true" BackgroundColor="@(Team1[1].pickedByPlayer > 0 ? Players[Team1[1].pickedByPlayer].color : "")" />
         </ul>
     </li>
         }
         else
         {
-    <TeamDisplay Team="@Team1[0]" IsFirst="true" IsLast="false" />
+    <TeamDisplay Team="@Team1[0]" IsFirst="true" IsLast="false" BackgroundColor="@(Team1[0].pickedByPlayer > 0 ? Players[Team1[0].pickedByPlayer].color : "")" />
         }
     @if (Team2.Count > 1)
         {
     <li class="last">
         <ul class="matchup">
-            <TeamDisplay Team="@Team2[0]" IsFirst="true" IsLast="false" />
-            <TeamDisplay Team="@Team2[1]" IsFirst="false" IsLast="true" />
+            <TeamDisplay Team="@Team2[0]" IsFirst="true" IsLast="false" BackgroundColor="@(Team2[0].pickedByPlayer > 0 ? Players[Team2[0].pickedByPlayer].color : "")" />
+            <TeamDisplay Team="@Team2[1]" IsFirst="false" IsLast="true" BackgroundColor="@(Team2[1].pickedByPlayer > 0 ? Players[Team2[1].pickedByPlayer].color : "")" />
         </ul>
     </li>
        }
         else
         {
-    <TeamDisplay Team="@Team2[0]" IsFirst="false" IsLast="true" />
+    <TeamDisplay Team="@Team2[0]" IsFirst="false" IsLast="true" BackgroundColor="@(Team2[0].pickedByPlayer > 0 ? Players[Team2[0].pickedByPlayer].color : "")" />
         }
 </ul>
 
@@ -33,4 +33,10 @@
 
     [Parameter]
     public List<Team> Team2 { get; set; }
+
+    [Parameter]
+    public Dictionary<int, Player> Players
+    {
+        get; set;
+    }
 }

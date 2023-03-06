@@ -1,4 +1,4 @@
-﻿<li class="@((IsFirst ? "first" : "") + (IsFirst && IsLast ? " " : "") + (IsLast ? "last" : ""))" style="@(BackgroundColor.HasValue ? "background-color:" + System.Drawing.ColorTranslator.ToHtml(BackgroundColor.Value) : "")" id="team-selector-@Team.sCurveRank">@Team.rank. @Team.teamName (@Team.wins - @Team.losses) @if(Team.pickedByPlayer == 0) {  <span class="cost">@Team.cost</span> }</li>
+﻿<li class="@((IsFirst ? "first" : "") + (IsFirst && IsLast ? " " : "") + (IsLast ? "last" : ""))" style="@(!String.IsNullOrEmpty(BackgroundColor) ? "background-color:" + BackgroundColor : "")" id="team-selector-@Team.sCurveRank">@Team.rank. @Team.teamName (@Team.wins - @Team.losses) @if(Team.pickedByPlayer == 0) {  <span class="cost">@Team.cost</span> }</li>
 
 @code {
     [Parameter]
@@ -6,7 +6,7 @@
     [Parameter]
     public bool IsLast { get; set; }
     [Parameter]
-    public System.Drawing.Color? BackgroundColor { get; set; }
+    public string BackgroundColor { get; set; }
     [Parameter]
     public Team Team { get; set; }
 }
