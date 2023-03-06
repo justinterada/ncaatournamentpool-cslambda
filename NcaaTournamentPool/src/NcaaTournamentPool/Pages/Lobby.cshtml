@@ -1,0 +1,58 @@
+﻿@page
+@model NcaaTournamentPool.Pages.LobbyModel
+@{
+}
+
+<h1>Lobby</h1>
+<p><a id="logOutButton" href="/">Log out</a></p>
+
+@if (!Model.DraftStatus.finished)
+{
+<div id="roundWrapper">
+    @foreach (var thisRound in Model.Rounds)
+    {
+    <div id="round\@thisRound.roundNumber" class="@(thisRound.roundNumber == Model.DraftStatus.round ? "round currentRound" : "round")">
+        <h2>Round @thisRound.roundNumber</h2>
+        <span class="roundDescription">
+            Points to Spend: @thisRound.pointsToSpend<br />
+            Maximum Hold Over: @thisRound.maxHoldOverPoints
+        </span>
+        <ol class="roundOrder">
+            @for (int n = 0; n < Model.DraftStatus.totalPlayers; n++)
+            {
+                if (n == Model.DraftStatus.currentOrderIndex && thisRound.roundNumber == Model.DraftStatus.round)
+                {
+            <li class="currentPlayer">@Model.Players[thisRound.roundOrder[n]-1].name</li>
+                }
+                else
+                {
+            <li>@Model.Players[thisRound.roundOrder[n]-1].name</li>
+                }
+            }
+        </ol>
+    </div>
+    }
+
+</div>
+<br style="clear: both;" />
+
+    if(Model.UserId == Model.Players[Model.Rounds[Model.DraftStatus.round-1].roundOrder[Model.DraftStatus.currentOrderIndex]-1].userId.ToString())
+    {
+<p><a id="chooseTeamsLink" href="ChooseTeams?userId=@Model.UserId">It's Your Turn!  Click Here to Choose Teams!</a></p>
+    }
+}
+else
+{
+<p>This draft has been completed.</p>
+<h3>Entries into Final Lottery</h3>
+<table class="lotteryTable">
+    <tr><th>Player</th><th>Entries</th></tr>
+    @foreach (Player thisPlayer in Model.Players)
+    {
+    <tr><td>@thisPlayer.name</td><td>@(thisPlayer.pointsHeldOver / 2).ToString()</td></tr>
+    }
+</table>
+}
+
+<p><a href="javascript:openGallery('bracketview.aspx',900,530)">Open bracket in new window</a></p>
+<h3>Log</h3>

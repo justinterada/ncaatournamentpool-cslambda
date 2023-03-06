@@ -17,6 +17,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="wwwroot\images\" />
+    <Folder Include="Shared\" />
   </ItemGroup>
   <ItemGroup>
     <Content Update="Properties\launchSettings.json">
@@ -30,18 +31,16 @@
     <None Remove="Pages\runlottery.aspx" />
     <None Remove="Pages\TeamDisplay.ascx" />
     <None Remove="Pages\ChooseTeams2.aspx" />
-    <None Remove="Pages\lobby.aspx" />
     <None Remove="Pages\chooseteams.aspx" />
     <None Remove="Pages\setupdraft.aspx" />
     <None Remove="Pages\Matchup.ascx" />
     <None Remove="Pages\bracketview.aspx" />
     <None Remove="Pages\cleardraft.aspx" />
     <None Remove="Pages\chooseuser.aspx" />
+    <None Remove="Pages\lobby.aspx" />
+    <None Remove="Shared\" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="wwwroot\css\.svn\entries" />
-    <None Include="wwwroot\css\.svn\all-wcprops" />
-    <None Include="wwwroot\css\.svn\text-base\default.css.svn-base" />
     <None Include="wwwroot\css\custom-theme\.svn\entries" />
     <None Include="wwwroot\css\custom-theme\.svn\all-wcprops" />
     <None Include="wwwroot\css\custom-theme\.svn\text-base\jquery-ui-1.8.10.custom.css.svn-base" />
