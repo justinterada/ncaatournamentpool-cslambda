@@ -26,22 +26,22 @@
 <div id="brackets1and4">
     <div id="bracket1">
         <h2 id="bracket1Header">@Model.BracketOneName</h2>
-        <component type="typeof(NcaaTournamentPool.Shared.Bracket)" render-mode="Static" param-bracketTeams="@Model.BracketOneTeams" />
+        <component type="typeof(NcaaTournamentPool.Shared.Bracket)" render-mode="Static" param-bracketTeams="@Model.BracketOneTeams" param-players="@Model.Players" />
     </div>
     <div id="bracket4">
         <h2 id="bracket4Header">@Model.BracketFourName</h2>
-        <component type="typeof(NcaaTournamentPool.Shared.Bracket)" render-mode="Static" param-bracketTeams="@Model.BracketFourTeams" />
+        <component type="typeof(NcaaTournamentPool.Shared.Bracket)" render-mode="Static" param-bracketTeams="@Model.BracketFourTeams" param-players="@Model.Players" />
     </div>
 </div>
 
 <div id="brackets2and3">
     <div id="bracket2">
         <h2 id="bracket2Header">@Model.BracketTwoName</h2>
-        <component type="typeof(NcaaTournamentPool.Shared.Bracket)" render-mode="Static" param-bracketTeams="@Model.BracketTwoTeams" />
+        <component type="typeof(NcaaTournamentPool.Shared.Bracket)" render-mode="Static" param-bracketTeams="@Model.BracketTwoTeams" param-players="@Model.Players" />
     </div>
     <div id="bracket3">
         <h2 id="bracket3Header">@Model.BracketThreeName</h2>
-        <component type="typeof(NcaaTournamentPool.Shared.Bracket)" render-mode="Static" param-bracketTeams="@Model.BracketThreeTeams" />
+        <component type="typeof(NcaaTournamentPool.Shared.Bracket)" render-mode="Static" param-bracketTeams="@Model.BracketThreeTeams" param-players="@Model.Players" />
     </div>
 </div>
 

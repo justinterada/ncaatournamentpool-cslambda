@@ -20,6 +20,13 @@ namespace NcaaTournamentPool.Pages
         public string BracketFourName { get; set; }
 
         private Dictionary<int, Player> _players;
+        public Dictionary<int, Player> Players
+        {
+            get
+            {
+                return _players;
+            }
+        }
 
         private Dictionary<int, List<Team>> _bracketOneTeams;
         public Dictionary<int, List<Team>> BracketOneTeams
