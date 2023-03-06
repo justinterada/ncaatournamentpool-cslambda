@@ -11,9 +11,10 @@ namespace NcaaTournamentPool.Pages
     {
         public CurrentStatus CurrentStatus { get; set; }
         public Round CurrentRound { get; set; }
+        public Player CurrentPlayer { get; set; }
         public Round[] Rounds { get; set; }
 
-        public string UserId { get; set; }
+        public int UserId { get; set; }
         public string BracketOneName { get; set; }
         public string BracketTwoName { get; set; }
         public string BracketThreeName { get; set; }
@@ -66,12 +67,20 @@ namespace NcaaTournamentPool.Pages
 
 
         private Dictionary<int, Team> _allTeamsBySCurveRank;
+
         private Team[] _allTeamsArray;
+        public Team[] AllTeamsArray
+        {
+            get
+            {
+                return _allTeamsArray;
+            }
+        }
 
         public void OnGet()
         {
             CurrentStatus = CommonMethods.loadCurrentStatus().Result;
-            UserId = this.Request.Query["userId"];
+            UserId = Convert.ToInt32(this.Request.Query["userId"]);
 
             Rounds = CommonMethods.loadRoundsForLobby().Result;
             CurrentRound = Rounds[CurrentStatus.round - 1];
@@ -87,34 +96,31 @@ namespace NcaaTournamentPool.Pages
                 if (player.initialPickOrder == currentPickOrder)
                 {
                     CurrentStatus.currentUserId = player.userId;
+                    CurrentPlayer = player;
                 }
             }
 
-            if (CurrentStatus.currentUserId.ToString() != UserId)
+            if (CurrentStatus.currentUserId != UserId)
             {
-                Response.Redirect(string.Format("lobby.aspx?userid={0}", UserId));
+                Response.Redirect(string.Format("Lobby?userId={0}", UserId));
             }
 
             List<Team> allTeams = new List<Team>();
 
             Team[] teams = CommonMethods.loadTeamsForBracketView(1).Result;
             _bracketOneTeams = CommonMethods.SortTeamsByRank(teams);
-            //BuildBracket(_bracketOneTeams, placeholderBracket1);
             allTeams.AddRange(teams);
 
             teams = CommonMethods.loadTeamsForBracketView(2).Result;
             _bracketTwoTeams = CommonMethods.SortTeamsByRank(teams);
-            //BuildBracket(_bracketTwoTeams, placeholderBracket2);
             allTeams.AddRange(teams);
 
             teams = CommonMethods.loadTeamsForBracketView(3).Result;
             _bracketThreeTeams = CommonMethods.SortTeamsByRank(teams);
-            //BuildBracket(_bracketThreeTeams, placeholderBracket3);
             allTeams.AddRange(teams);
 
             teams = CommonMethods.loadTeamsForBracketView(4).Result;
             _bracketFourTeams = CommonMethods.SortTeamsByRank(teams);
-            //BuildBracket(_bracketFourTeams, placeholderBracket4);
             allTeams.AddRange(teams);
 
             allTeams.Sort(delegate (Team l, Team r) { return l.sCurveRank.CompareTo(r.sCurveRank); });

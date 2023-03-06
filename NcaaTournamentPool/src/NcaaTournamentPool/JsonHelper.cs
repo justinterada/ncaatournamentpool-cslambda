@@ -6,7 +6,7 @@ using System.IO;
 using System.Text;
 using System.Runtime.Serialization.Json;
 
-namespace NcaaTourneyPool
+namespace NcaaTournamentPool
 {
     public static class JsonHelper
     {

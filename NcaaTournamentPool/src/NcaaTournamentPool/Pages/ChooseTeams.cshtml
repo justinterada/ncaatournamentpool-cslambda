@@ -49,3 +49,23 @@
     <p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span>Are you sure you want to select these teams?</p>
 </div>
 
+@section Scripts {
+<script language="javascript" src="~/js/ChooseTeams.js" type="text/javascript"></script>
+<style type="text/css">
+    ul.matchup li.selected {
+        background-color: @Model.Players[Model.UserId].color;
+    }
+</style>
+
+
+<script type="text/javascript"><!--
+    $(document).ready(onReady);
+
+    currentStatus.currentRound = @Html.Raw(JsonHelper.Serialize(Model.CurrentRound));
+    currentStatus.currentPlayer = @Html.Raw(JsonHelper.Serialize(Model.CurrentPlayer));
+    currentStatus.pointsAvailable = currentStatus.currentRound.pointsToSpend + currentStatus.currentPlayer.pointsHeldOver;
+
+    var allTeams = @Html.Raw(JsonHelper.Serialize(Model.AllTeamsArray));
+    -->
+</script>
+}
