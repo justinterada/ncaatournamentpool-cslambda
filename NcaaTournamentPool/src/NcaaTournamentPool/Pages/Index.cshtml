@@ -6,6 +6,21 @@
 <h1>Who are you?</h1>
 
 @foreach (Player player in Model.Players)
-    {
-<a href="lobby?userId=@player.userId" style="display:block; margin: 5px 5px 5px 0px">@player.name</a>
-    }
+{
+    <a href="~/Lobby?userId=@player.userId" style="display:block; margin: 5px 5px 5px 0px">@player.name</a>
+}
+
+@section Scripts {
+    <script type="text/javascript"><!--
+        $(document).ready(function() {
+            if (commonMethods.isMobileDevice()) {
+                $("a").css("width", "100%");
+            }
+            else {
+                $("a").css("width", "250px");
+            }
+
+            $("a").button();
+        });
+    --></script>
+}

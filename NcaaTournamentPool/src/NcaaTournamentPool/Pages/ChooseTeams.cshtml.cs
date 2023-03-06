@@ -102,7 +102,7 @@ namespace NcaaTournamentPool.Pages
 
             if (CurrentStatus.currentUserId != UserId)
             {
-                Response.Redirect(string.Format("Lobby?userId={0}", UserId));
+                Response.Redirect(string.Format("~/Lobby?userId={0}", UserId));
             }
 
             List<Team> allTeams = new List<Team>();
