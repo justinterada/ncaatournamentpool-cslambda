@@ -18,6 +18,7 @@
   <ItemGroup>
     <Folder Include="wwwroot\images\" />
     <Folder Include="Shared\" />
+    <Folder Include="Controllers\" />
   </ItemGroup>
   <ItemGroup>
     <Content Update="Properties\launchSettings.json">
@@ -39,6 +40,7 @@
     <None Remove="Pages\chooseuser.aspx" />
     <None Remove="Pages\lobby.aspx" />
     <None Remove="Shared\" />
+    <None Remove="Controllers\" />
   </ItemGroup>
   <ItemGroup>
     <None Include="wwwroot\css\custom-theme\.svn\entries" />

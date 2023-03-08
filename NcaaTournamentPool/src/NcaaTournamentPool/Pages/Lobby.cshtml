@@ -1,6 +1,7 @@
 ﻿@page
 @model NcaaTournamentPool.Pages.LobbyModel
 @{
+    ViewData["Title"] = "Lobby";
 }
 
 <h1>Lobby</h1>
@@ -18,7 +19,7 @@
                     Maximum Hold Over: @thisRound.maxHoldOverPoints
                 </span>
                 <ol class="roundOrder">
-                    @for (int n = 0; n < Model.DraftStatus.totalPlayers; n++)
+                    @for (int n = 0; n < Model.DraftStatus.players.Length; n++)
                     {
                         if (n == Model.DraftStatus.currentOrderIndex && thisRound.roundNumber == Model.DraftStatus.round)
                         {
@@ -56,6 +57,8 @@ else
 
 <p><a href="javascript:openGallery('bracketview.aspx',900,530)">Open bracket in new window</a></p>
 <h3>Log</h3>
+
+@Html.Raw(Model.DraftStatus.log)
 
 @section Scripts {
     <script language="javascript" src="~/js/Lobby.js" type="text/javascript"></script>

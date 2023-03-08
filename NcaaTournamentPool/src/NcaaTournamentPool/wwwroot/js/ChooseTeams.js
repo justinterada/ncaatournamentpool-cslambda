@@ -303,13 +303,20 @@ function updateSelectedTeamsField() {
 
 function confirmSelect() {
     $("#dialog-confirm").dialog({
+        dialogClass: "no-close",
         resizable: false,
         height: 160,
         modal: true,
         buttons: {
             Yes: function() {
                 $(this).dialog("close");
-                $("#buttonSubmit").click();
+                $("#dialog-busy").dialog({
+                    dialogClass: "no-close",
+                    resizable: false,
+                    closeOnEscape: false,
+                    height: 100,
+                    modal: true});
+                submitPicks();
             },
             No: function() {
                 $(this).dialog("close");
@@ -318,6 +325,30 @@ function confirmSelect() {
     });
 
     return false;
+}
+
+function submitPicks() {
+    let url = 'api/draft';
+    let data = {
+        'selectedTeams': currentStatus.selectedTeams,
+        'currentUser': currentStatus.currentPlayer.userId,
+        'currentRound': currentStatus.currentRound.roundNumber
+    };
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+    }).then(res => {
+        if (res.ok) {
+            window.location.href = 'Lobby?userId=' + currentStatus.currentPlayer.userId
+        } else {
+            alert("Something went wrong, redirecting you to the lobby");
+            window.location.href = 'Lobby?userId=' + currentStatus.currentPlayer.userId
+        }
+    });
 }
 
 var errorHidingTimeoutId;

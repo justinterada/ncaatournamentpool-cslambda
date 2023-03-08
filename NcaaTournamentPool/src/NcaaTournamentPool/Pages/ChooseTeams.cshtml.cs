@@ -82,27 +82,22 @@ namespace NcaaTournamentPool.Pages
             CurrentStatus = CommonMethods.loadCurrentStatus().Result;
             UserId = Convert.ToInt32(this.Request.Query["userId"]);
 
-            Rounds = CommonMethods.loadRoundsForLobby().Result;
-            CurrentRound = Rounds[CurrentStatus.round - 1];
+            Rounds = CurrentStatus.rounds;
+            CurrentRound = CurrentStatus.currentRound;
 
             int currentPickOrder = Rounds[CurrentStatus.round - 1].roundOrder[CurrentStatus.currentOrderIndex];
 
             // Load up the players
             _players = new Dictionary<int, Player>();
-            foreach (Player player in CommonMethods.loadPlayersForLobby().Result)
+            foreach (Player player in CurrentStatus.players)
             {
                 _players.Add(player.userId, player);
-
-                if (player.initialPickOrder == currentPickOrder)
-                {
-                    CurrentStatus.currentUserId = player.userId;
-                    CurrentPlayer = player;
-                }
             }
+            CurrentPlayer = CurrentStatus.currentPlayer;
 
             if (CurrentStatus.currentUserId != UserId)
             {
-                Response.Redirect(string.Format("~/Lobby?userId={0}", UserId));
+                Response.Redirect(Url.Content(string.Format("~/Lobby?userId={0}", UserId)));
             }
 
             List<Team> allTeams = new List<Team>();

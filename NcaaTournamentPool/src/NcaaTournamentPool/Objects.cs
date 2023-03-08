@@ -10,7 +10,6 @@ namespace NcaaTournamentPool
 		public bool eliminated;
 		public int rank;
         public int cost;
-		public string bracket;
 		public int bracketId;
 		public int pickedByPlayer;
 	}
@@ -28,13 +27,35 @@ namespace NcaaTournamentPool
 	public class CurrentStatus
 	{
 		public int round;
-		public int currentUserId;
+		public int currentUserId
+		{
+			get
+			{
+				return currentPlayer != null ? currentPlayer.userId : 0;
+			}
+		}
 		public int currentOrderIndex;
-		public int maxHoldOverPoints;
-		public int pointsToSpend;
-		public int totalPlayers;
-		public int totalRounds;
+		public int maxHoldOverPoints
+		{
+			get
+			{
+				return currentRound != null ? currentRound.maxHoldOverPoints : 0;
+			}
+		}
+		public int pointsToSpend
+		{
+			get
+			{
+				return currentRound != null ? currentRound.pointsToSpend : 0;
+			}
+		}
 		public bool finished;
+		public Player[] players;
+		public Round[] rounds;
+		public Dictionary<int, string> brackets;
+		public Player currentPlayer;
+		public Round currentRound;
+		public string log;
 	}
 
 	public class Round
