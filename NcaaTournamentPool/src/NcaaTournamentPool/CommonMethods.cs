@@ -1,13 +1,6 @@
-using System;
-using System.Configuration;
-using System.Web;
-using System.Collections.Generic;
-using System.IO;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.DocumentModel;
-using System.Data;
 using Amazon.DynamoDBv2.Model;
-using NcaaTournamentPool.Shared;
 using System.Text;
 
 namespace NcaaTournamentPool
@@ -22,43 +15,59 @@ namespace NcaaTournamentPool
             dynamoDBConfig.RegionEndpoint = Amazon.RegionEndpoint.USWest2;
         }
 
-        /*
-        public static void resetDraft(HttpServerUtility theserver)
+        public static void resetDraft()
         {
-            string DB = theserver.MapPath(SETPATH);
-            dbConnect = new OleDbConnection(CONNECTSTRING + DB);
+            AmazonDynamoDBClient dynamoDBClient = new AmazonDynamoDBClient(dynamoDBConfig);
 
-            OleDbCommand olecommand = new OleDbCommand("resetDraftStatus", dbConnect);
-            olecommand.CommandType = CommandType.StoredProcedure;
+            List<TransactWriteItem> writeItems = new List<TransactWriteItem>();
 
-            olecommand.Connection.Open();
+            Table statusTable = Table.LoadTable(dynamoDBClient, GetTableName("draftstatus"));
+            TransactWriteItem updateDraftStatus = new TransactWriteItem();
+            updateDraftStatus.Update = new Update();
+            updateDraftStatus.Update.TableName = statusTable.TableName;
+            updateDraftStatus.Update.Key.Add("draft-id", new AttributeValue() { N = "1" });
+            updateDraftStatus.Update.ExpressionAttributeNames.Add("#order_index", "order-index");
+            updateDraftStatus.Update.ExpressionAttributeNames.Add("#current_round", "current-round");
+            updateDraftStatus.Update.ExpressionAttributeNames.Add("#log", "log");
+            updateDraftStatus.Update.ExpressionAttributeValues.Add(":false", new AttributeValue() { BOOL = false});
+            updateDraftStatus.Update.ExpressionAttributeValues.Add(":order_index", new AttributeValue() { N = "0" });
+            updateDraftStatus.Update.ExpressionAttributeValues.Add(":round", new AttributeValue() { N = "1" });
+            updateDraftStatus.Update.ExpressionAttributeValues.Add(":log", new AttributeValue() { S = string.Empty });
+            updateDraftStatus.Update.UpdateExpression = "SET finished = :false, #order_index = :order_index, #current_round = :round, #log = :log";
+            writeItems.Add(updateDraftStatus);
 
-            olecommand.ExecuteNonQuery();
+            Table teamsTable = Table.LoadTable(dynamoDBClient, GetTableName("teams"));
+            foreach (Team team in loadAllTeams().Result)
+            {
+                TransactWriteItem updateTeam = new TransactWriteItem();
+                updateTeam.Update = new Update();
+                updateTeam.Update.TableName = teamsTable.TableName;
+                updateTeam.Update.Key.Add("s-curve-rank", new AttributeValue() { S = team.sCurveRank.ToString() });
+                updateTeam.Update.ExpressionAttributeNames.Add("#selected_by", "selected-by");
+                updateTeam.Update.ExpressionAttributeValues.Add(":selected_by", new AttributeValue() { S = "0" });
+                updateTeam.Update.ExpressionAttributeValues.Add(":false", new AttributeValue() { BOOL = false });
+                updateTeam.Update.UpdateExpression = "SET #selected_by = :selected_by, eliminated = :false";
+                writeItems.Add(updateTeam);
 
-            dbConnect.Close();
+            }
 
-            olecommand = new OleDbCommand("resetTeams", dbConnect);
-            olecommand.CommandType = CommandType.StoredProcedure;
+            Table userTable = Table.LoadTable(dynamoDBClient, GetTableName("users"));
+            foreach (Player player in loadPlayers(dynamoDBClient).Result)
+            {
+                TransactWriteItem updateUser = new TransactWriteItem();
+                updateUser.Update = new Update();
+                updateUser.Update.TableName = userTable.TableName;
+                updateUser.Update.Key.Add("user-id", new AttributeValue() { S = player.userId.ToString() });
+                updateUser.Update.ExpressionAttributeNames.Add("#points_held_over", "points-held-over");
+                updateUser.Update.ExpressionAttributeValues.Add(":points_held_over", new AttributeValue() { N = "0" });
+                updateUser.Update.UpdateExpression = "SET #points_held_over = :points_held_over";
+                writeItems.Add(updateUser);
+            }
 
-            olecommand.Connection.Open();
-
-            olecommand.ExecuteNonQuery();
-
-            dbConnect.Close();
-
-            olecommand = new OleDbCommand("resetUserPoints", dbConnect);
-            olecommand.CommandType = CommandType.StoredProcedure;
-
-            olecommand.Connection.Open();
-
-            olecommand.ExecuteNonQuery();
-
-            dbConnect.Close();
-
-            clearLog();
-
-
-        }*/
+            TransactWriteItemsRequest transactWriteItemsRequest = new TransactWriteItemsRequest();
+            transactWriteItemsRequest.TransactItems = writeItems;
+            _ = dynamoDBClient.TransactWriteItemsAsync(transactWriteItemsRequest).Result;
+        }
 
         private static string GetTableName(string table)
         {
@@ -70,7 +79,6 @@ namespace NcaaTournamentPool
             AmazonDynamoDBClient dynamoDBClient = new AmazonDynamoDBClient(dynamoDBConfig);
             Table statusTable = Table.LoadTable(dynamoDBClient, GetTableName("draftstatus"));
             Table roundTable = Table.LoadTable(dynamoDBClient, GetTableName("rounds"));
-            Table userTable = Table.LoadTable(dynamoDBClient, GetTableName("users"));
 
             var statusTableConfig = new GetItemOperationConfig
             {
@@ -84,23 +92,7 @@ namespace NcaaTournamentPool
             nowStatus.finished = statusTableRow["finished"].AsBoolean();
             nowStatus.log = statusTableRow["log"].AsString();
 
-            var userTableScanRequest = new ScanOperationConfig();
-            var userTableScan = userTable.Scan(userTableScanRequest);
-            List<Document> userDocuments = await userTableScan.GetRemainingAsync();
-            userDocuments.Sort((x, y) => x["initial-order"].AsInt().CompareTo(y["initial-order"].AsInt()));
-
-            var thePlayers = new List<Player>();
-            foreach (Document currentUser in userDocuments)
-            {
-                var thisPlayer = new Player();
-                thisPlayer.name = currentUser["name"].AsString();
-                thisPlayer.pointsHeldOver = currentUser["points-held-over"].AsInt();
-                thisPlayer.userId = currentUser["user-id"].AsInt();
-                thisPlayer.color = currentUser["color"].AsString();
-                thisPlayer.initialPickOrder = currentUser["initial-order"].AsInt();
-                thePlayers.Add(thisPlayer);
-            }
-            nowStatus.players = thePlayers.ToArray();
+            nowStatus.players = loadPlayers(dynamoDBClient).Result;
 
             var roundTableScanRequest = new ScanOperationConfig();
             var roundTableScan = roundTable.Scan(roundTableScanRequest);
@@ -122,11 +114,11 @@ namespace NcaaTournamentPool
                     nowStatus.currentRound = theRounds[i];
                 }
 
-                theRounds[i].roundOrder = new int[thePlayers.Count()];
+                theRounds[i].roundOrder = new int[nowStatus.players.Length];
 
                 if ((theRounds[i].roundNumber % 4) == 1)
                 {
-                    for (int j = 1; j <= thePlayers.Count(); j++)
+                    for (int j = 1; j <= nowStatus.players.Length; j++)
                     {
                         theRounds[i].roundOrder[j - 1] = j;
                     }
@@ -134,31 +126,31 @@ namespace NcaaTournamentPool
 
                 if ((theRounds[i].roundNumber % 4) == 2)
                 {
-                    for (int j = 1; j <= thePlayers.Count(); j++)
+                    for (int j = 1; j <= nowStatus.players.Length; j++)
                     {
-                        theRounds[i].roundOrder[j - 1] = thePlayers.Count() + 1 - j;
+                        theRounds[i].roundOrder[j - 1] = nowStatus.players.Length + 1 - j;
                     }
                 }
 
                 if ((theRounds[i].roundNumber % 4) == 3)
                 {
-                    for (int j = 1; j <= thePlayers.Count(); j++)
+                    for (int j = 1; j <= nowStatus.players.Length; j++)
                     {
-                        if (j <= (thePlayers.Count() / 2) + (thePlayers.Count() % 2))
-                            theRounds[i].roundOrder[j - 1] = thePlayers.Count() / 2 + j;
+                        if (j <= (nowStatus.players.Length / 2) + (nowStatus.players.Length % 2))
+                            theRounds[i].roundOrder[j - 1] = nowStatus.players.Length / 2 + j;
                         else
-                            theRounds[i].roundOrder[j - 1] = thePlayers.Count() / 2 - (thePlayers.Count() - j);
+                            theRounds[i].roundOrder[j - 1] = nowStatus.players.Length / 2 - (nowStatus.players.Length - j);
                     }
                 }
 
                 if ((theRounds[i].roundNumber % 4) == 0)
                 {
-                    for (int j = 1; j <= thePlayers.Count(); j++)
+                    for (int j = 1; j <= nowStatus.players.Length; j++)
                     {
-                        if (j <= (thePlayers.Count() / 2))
-                            theRounds[i].roundOrder[j - 1] = thePlayers.Count() / 2 - j + 1;
+                        if (j <= (nowStatus.players.Length / 2))
+                            theRounds[i].roundOrder[j - 1] = nowStatus.players.Length / 2 - j + 1;
                         else
-                            theRounds[i].roundOrder[j - 1] = thePlayers.Count() / 2 + (thePlayers.Count() - j) + 1;
+                            theRounds[i].roundOrder[j - 1] = nowStatus.players.Length / 2 + (nowStatus.players.Length - j) + 1;
                     }
                 }
             }
@@ -190,7 +182,29 @@ namespace NcaaTournamentPool
             return nowStatus;
         }
 
-        public static async Task<Team[]> loadTeamsForBracketView(int bracketId)
+        private static async Task<Player[]> loadPlayers(AmazonDynamoDBClient dynamoDBClient)
+        {
+            Table userTable = Table.LoadTable(dynamoDBClient, GetTableName("users"));
+            var userTableScanRequest = new ScanOperationConfig();
+            var userTableScan = userTable.Scan(userTableScanRequest);
+            List<Document> userDocuments = await userTableScan.GetRemainingAsync();
+            userDocuments.Sort((x, y) => x["initial-order"].AsInt().CompareTo(y["initial-order"].AsInt()));
+
+            var thePlayers = new List<Player>();
+            foreach (Document currentUser in userDocuments)
+            {
+                var thisPlayer = new Player();
+                thisPlayer.name = currentUser["name"].AsString();
+                thisPlayer.pointsHeldOver = currentUser["points-held-over"].AsInt();
+                thisPlayer.userId = currentUser["user-id"].AsInt();
+                thisPlayer.color = currentUser["color"].AsString();
+                thisPlayer.initialPickOrder = currentUser["initial-order"].AsInt();
+                thePlayers.Add(thisPlayer);
+            }
+            return thePlayers.ToArray();
+        }
+
+        public static Team[] loadTeamsForBracketView(int bracketId)
         {
             AmazonDynamoDBClient dynamoDBClient = new AmazonDynamoDBClient(dynamoDBConfig);
             Table teamsTable = Table.LoadTable(dynamoDBClient, GetTableName("teams"));
@@ -203,18 +217,7 @@ namespace NcaaTournamentPool
 
             foreach (Document teamDocument in teamsRetrieved)
             {
-                teams.Add(new Team()
-                {
-                    sCurveRank = teamDocument["s-curve-rank"].AsInt(),
-                    teamName = teamDocument["team-name"].AsString(),
-                    bracketId = teamDocument["bracket-id"].AsInt(),
-                    eliminated = teamDocument["eliminated"].AsBoolean(),
-                    rank = teamDocument["team-rank"].AsInt(),
-                    wins = teamDocument["team-wins"].AsInt(),
-                    losses = teamDocument["team-losses"].AsInt(),
-                    cost = teamDocument["cost"].AsInt(),
-                    pickedByPlayer = teamDocument["selected-by"].AsInt()
-                });
+                teams.Add(new Team(teamDocument));
             }
 
             return teams.ToArray();
@@ -268,18 +271,26 @@ namespace NcaaTournamentPool
 
             foreach (Document teamDocument in teamsRetrieved)
             {
-                teams.Add(new Team()
-                {
-                    sCurveRank = teamDocument["s-curve-rank"].AsInt(),
-                    teamName = teamDocument["team-name"].AsString(),
-                    bracketId = teamDocument["bracket-id"].AsInt(),
-                    eliminated = teamDocument["eliminated"].AsBoolean(),
-                    rank = teamDocument["team-rank"].AsInt(),
-                    wins = teamDocument["team-wins"].AsInt(),
-                    losses = teamDocument["team-losses"].AsInt(),
-                    cost = teamDocument["cost"].AsInt(),
-                    pickedByPlayer = teamDocument["selected-by"].AsInt()
-                });
+                teams.Add(new Team(teamDocument));
+            }
+
+            return teams.ToArray();
+        }
+
+        public static async Task<Team[]> loadAllTeams()
+        {
+            AmazonDynamoDBClient dynamoDBClient = new AmazonDynamoDBClient(dynamoDBConfig);
+            Table teamsTable = Table.LoadTable(dynamoDBClient, GetTableName("teams"));
+            ScanOperationConfig scanConfig = new ScanOperationConfig();
+            List<AttributeValue> attributeValues = new List<AttributeValue>();
+
+            var teamsTableScan = teamsTable.Scan(scanConfig);
+            var teamsRetrieved = await teamsTableScan.GetRemainingAsync();
+            List<Team> teams = new List<Team>();
+
+            foreach (Document teamDocument in teamsRetrieved)
+            {
+                teams.Add(new Team(teamDocument));
             }
 
             return teams.ToArray();
@@ -364,7 +375,7 @@ namespace NcaaTournamentPool
 
             TransactWriteItemsRequest transactWriteItemsRequest = new TransactWriteItemsRequest();
             transactWriteItemsRequest.TransactItems = writeItems;
-            var transactionResult = dynamoDBClient.TransactWriteItemsAsync(transactWriteItemsRequest).Result;
+            _ = dynamoDBClient.TransactWriteItemsAsync(transactWriteItemsRequest).Result;
 
             if (newRound > nowStatus.rounds.Length)
             {
@@ -377,147 +388,151 @@ namespace NcaaTournamentPool
         {
             AmazonDynamoDBClient dynamoDBClient = new AmazonDynamoDBClient(dynamoDBConfig);
             Table teamsTable = Table.LoadTable(dynamoDBClient, GetTableName("teams"));
-            List<TransactWriteItem> writeItems = new List<TransactWriteItem>();
-
-            CurrentStatus currentStatus = loadCurrentStatus().Result;
-            StringBuilder logStringBuilder = new StringBuilder(currentStatus.log);
-            logStringBuilder.Append("<b>End of Draft Lottery</b><br />");
             Team[] theTeams = loadTeamsForLotteryAsTeams();
 
-            int totalEntries = 0;
-            int entriesToDeduct = 1;
-
-            foreach (Player thisPlayer in currentStatus.players)
+            if (theTeams.Length > 0)
             {
-                // Adjust for the 2011 doubling of points
-                thisPlayer.pointsHeldOver = Convert.ToInt32(Math.Floor(thisPlayer.pointsHeldOver / 2.0));
+                List<TransactWriteItem> writeItems = new List<TransactWriteItem>();
 
-                totalEntries = totalEntries + thisPlayer.pointsHeldOver;
-            }
+                CurrentStatus currentStatus = loadCurrentStatus().Result;
+                StringBuilder logStringBuilder = new StringBuilder(currentStatus.log);
+                logStringBuilder.Append("<b>End of Draft Lottery</b><br />");
 
-            if (totalEntries == 0)
-            {
-                foreach (Player thisPlayer in currentStatus.players)
-                {
-                    thisPlayer.pointsHeldOver = 1;
-                    totalEntries = totalEntries + thisPlayer.pointsHeldOver;
-                }
-            }
-
-            foreach (Player thisPlayer in currentStatus.players)
-            {
-                logStringBuilder.Append("<b>" + thisPlayer.name + "</b> has <b>" + thisPlayer.pointsHeldOver.ToString() + "</b> entries.<br />");
-            }
-
-            logStringBuilder.Append("<br />");
-
-            while (totalEntries < theTeams.Length)
-            {
-                totalEntries = 0;
-                foreach (Player thisPlayer in currentStatus.players)
-                {
-                    thisPlayer.pointsHeldOver = thisPlayer.pointsHeldOver * 2;
-                    totalEntries = totalEntries + thisPlayer.pointsHeldOver;
-                }
-                entriesToDeduct = entriesToDeduct * 2;
-            }
-
-            int[] theLotteryArray;
-
-            Random meRandom = new Random();
-
-            int teamsDone = 0;
-
-            foreach (Team thisTeam in theTeams)
-            {
-                while (totalEntries < (theTeams.Length - teamsDone))
-                {
-                    if (totalEntries == 0)
-                    {
-                        foreach (Player thisPlayer in currentStatus.players)
-                        {
-                            thisPlayer.pointsHeldOver = 1;
-                            totalEntries = totalEntries + thisPlayer.pointsHeldOver;
-                            entriesToDeduct = 1;
-                        }
-                    }
-                    else
-                    {
-                        totalEntries = 0;
-                        foreach (Player thisPlayer in currentStatus.players)
-                        {
-                            thisPlayer.pointsHeldOver = thisPlayer.pointsHeldOver * 2;
-                            totalEntries = totalEntries + thisPlayer.pointsHeldOver;
-                        }
-                        entriesToDeduct = entriesToDeduct * 2;
-                    }
-                }
-
-                theLotteryArray = new int[totalEntries];
-
-                int startIndex = 0;
-                int playerIndex = 0;
+                int totalEntries = 0;
+                int entriesToDeduct = 1;
 
                 foreach (Player thisPlayer in currentStatus.players)
                 {
-                    if (thisPlayer.pointsHeldOver != 0)
-                    {
-                        for (int i = startIndex; i < startIndex + thisPlayer.pointsHeldOver; i++)
-                        {
-                            theLotteryArray[i] = playerIndex;
-                        }
-                    }
-                    startIndex = startIndex + thisPlayer.pointsHeldOver;
-                    playerIndex++;
-                }
+                    // Adjust for the 2011 doubling of points
+                    thisPlayer.pointsHeldOver = Convert.ToInt32(Math.Floor(thisPlayer.pointsHeldOver / 2.0));
 
-
-                int givenTo = theLotteryArray[meRandom.Next() % totalEntries];
-
-                TransactWriteItem updateTeam = new TransactWriteItem();
-                updateTeam.Update = new Update();
-                updateTeam.Update.TableName = teamsTable.TableName;
-                updateTeam.Update.Key.Add("s-curve-rank", new AttributeValue() { S = thisTeam.sCurveRank.ToString() });
-                updateTeam.Update.ExpressionAttributeNames.Add("#selected_by", "selected-by");
-                updateTeam.Update.ExpressionAttributeValues.Add(":selected_by", new AttributeValue() { S = currentStatus.players[givenTo].userId.ToString() });
-                updateTeam.Update.UpdateExpression = "SET #selected_by = :selected_by";
-                writeItems.Add(updateTeam);
-
-                logStringBuilder.Append(thisTeam.teamName + " (" + thisTeam.rank.ToString() + ", " + currentStatus.brackets[thisTeam.bracketId] + ", " + (thisTeam.cost).ToString() + " points) ");
-                logStringBuilder.Append("is awarded to <b>" + currentStatus.players[givenTo].name + "</b>.<br />");
-
-                currentStatus.players[givenTo].pointsHeldOver = currentStatus.players[givenTo].pointsHeldOver - entriesToDeduct;
-
-                totalEntries = 0;
-
-                foreach (Player thisPlayer in currentStatus.players)
-                {
                     totalEntries = totalEntries + thisPlayer.pointsHeldOver;
                 }
 
-                teamsDone++;
+                if (totalEntries == 0)
+                {
+                    foreach (Player thisPlayer in currentStatus.players)
+                    {
+                        thisPlayer.pointsHeldOver = 1;
+                        totalEntries = totalEntries + thisPlayer.pointsHeldOver;
+                    }
+                }
+
+                foreach (Player thisPlayer in currentStatus.players)
+                {
+                    logStringBuilder.Append("<b>" + thisPlayer.name + "</b> has <b>" + thisPlayer.pointsHeldOver.ToString() + "</b> entries.<br />");
+                }
+
+                logStringBuilder.Append("<br />");
+
+                while (totalEntries < theTeams.Length)
+                {
+                    totalEntries = 0;
+                    foreach (Player thisPlayer in currentStatus.players)
+                    {
+                        thisPlayer.pointsHeldOver = thisPlayer.pointsHeldOver * 2;
+                        totalEntries = totalEntries + thisPlayer.pointsHeldOver;
+                    }
+                    entriesToDeduct = entriesToDeduct * 2;
+                }
+
+                int[] theLotteryArray;
+
+                Random meRandom = new Random();
+
+                int teamsDone = 0;
+
+                foreach (Team thisTeam in theTeams)
+                {
+                    while (totalEntries < (theTeams.Length - teamsDone))
+                    {
+                        if (totalEntries == 0)
+                        {
+                            foreach (Player thisPlayer in currentStatus.players)
+                            {
+                                thisPlayer.pointsHeldOver = 1;
+                                totalEntries = totalEntries + thisPlayer.pointsHeldOver;
+                                entriesToDeduct = 1;
+                            }
+                        }
+                        else
+                        {
+                            totalEntries = 0;
+                            foreach (Player thisPlayer in currentStatus.players)
+                            {
+                                thisPlayer.pointsHeldOver = thisPlayer.pointsHeldOver * 2;
+                                totalEntries = totalEntries + thisPlayer.pointsHeldOver;
+                            }
+                            entriesToDeduct = entriesToDeduct * 2;
+                        }
+                    }
+
+                    theLotteryArray = new int[totalEntries];
+
+                    int startIndex = 0;
+                    int playerIndex = 0;
+
+                    foreach (Player thisPlayer in currentStatus.players)
+                    {
+                        if (thisPlayer.pointsHeldOver != 0)
+                        {
+                            for (int i = startIndex; i < startIndex + thisPlayer.pointsHeldOver; i++)
+                            {
+                                theLotteryArray[i] = playerIndex;
+                            }
+                        }
+                        startIndex = startIndex + thisPlayer.pointsHeldOver;
+                        playerIndex++;
+                    }
+
+
+                    int givenTo = theLotteryArray[meRandom.Next() % totalEntries];
+
+                    TransactWriteItem updateTeam = new TransactWriteItem();
+                    updateTeam.Update = new Update();
+                    updateTeam.Update.TableName = teamsTable.TableName;
+                    updateTeam.Update.Key.Add("s-curve-rank", new AttributeValue() { S = thisTeam.sCurveRank.ToString() });
+                    updateTeam.Update.ExpressionAttributeNames.Add("#selected_by", "selected-by");
+                    updateTeam.Update.ExpressionAttributeValues.Add(":selected_by", new AttributeValue() { S = currentStatus.players[givenTo].userId.ToString() });
+                    updateTeam.Update.UpdateExpression = "SET #selected_by = :selected_by";
+                    writeItems.Add(updateTeam);
+
+                    logStringBuilder.Append(thisTeam.teamName + " (" + thisTeam.rank.ToString() + ", " + currentStatus.brackets[thisTeam.bracketId] + ", " + (thisTeam.cost).ToString() + " points) ");
+                    logStringBuilder.Append("is awarded to <b>" + currentStatus.players[givenTo].name + "</b>.<br />");
+
+                    currentStatus.players[givenTo].pointsHeldOver = currentStatus.players[givenTo].pointsHeldOver - entriesToDeduct;
+
+                    totalEntries = 0;
+
+                    foreach (Player thisPlayer in currentStatus.players)
+                    {
+                        totalEntries = totalEntries + thisPlayer.pointsHeldOver;
+                    }
+
+                    teamsDone++;
+                }
+
+                Table statusTable = Table.LoadTable(dynamoDBClient, GetTableName("draftstatus"));
+                TransactWriteItem updateDraftStatus = new TransactWriteItem();
+                updateDraftStatus.Update = new Update();
+                updateDraftStatus.Update.TableName = statusTable.TableName;
+                updateDraftStatus.Update.Key.Add("draft-id", new AttributeValue() { N = "1" });
+                updateDraftStatus.Update.ExpressionAttributeNames.Add("#order_index", "order-index");
+                updateDraftStatus.Update.ExpressionAttributeNames.Add("#current_round", "current-round");
+                updateDraftStatus.Update.ExpressionAttributeNames.Add("#log", "log");
+                updateDraftStatus.Update.ExpressionAttributeValues.Add(":old_order_index", new AttributeValue() { N = currentStatus.currentOrderIndex.ToString() });
+                updateDraftStatus.Update.ExpressionAttributeValues.Add(":old_round", new AttributeValue() { N = currentStatus.round.ToString() });
+                updateDraftStatus.Update.ExpressionAttributeValues.Add(":negative_one", new AttributeValue() { N = "-1" });
+                updateDraftStatus.Update.ExpressionAttributeValues.Add(":true", new AttributeValue() { BOOL = true });
+                updateDraftStatus.Update.ConditionExpression = "#order_index = :old_order_index AND #current_round = :old_round";
+                updateDraftStatus.Update.ExpressionAttributeValues.Add(":log", new AttributeValue() { S = logStringBuilder.ToString() });
+                updateDraftStatus.Update.UpdateExpression = "SET finished = :true, #log = :log, #order_index = :negative_one, #current_round = :negative_one";
+                writeItems.Add(updateDraftStatus);
+
+                TransactWriteItemsRequest transactWriteItemsRequest = new TransactWriteItemsRequest();
+                transactWriteItemsRequest.TransactItems = writeItems;
+                _ = dynamoDBClient.TransactWriteItemsAsync(transactWriteItemsRequest).Result;
             }
-
-            Table statusTable = Table.LoadTable(dynamoDBClient, GetTableName("draftstatus"));
-            TransactWriteItem updateDraftStatus = new TransactWriteItem();
-            updateDraftStatus.Update = new Update();
-            updateDraftStatus.Update.TableName = statusTable.TableName;
-            updateDraftStatus.Update.Key.Add("draft-id", new AttributeValue() { N = "1" });
-            updateDraftStatus.Update.ExpressionAttributeNames.Add("#order_index", "order-index");
-            updateDraftStatus.Update.ExpressionAttributeNames.Add("#current_round", "current-round");
-            updateDraftStatus.Update.ExpressionAttributeNames.Add("#log", "log");
-            updateDraftStatus.Update.ExpressionAttributeValues.Add(":old_order_index", new AttributeValue() { N = currentStatus.currentOrderIndex.ToString() });
-            updateDraftStatus.Update.ExpressionAttributeValues.Add(":old_round", new AttributeValue() { N = currentStatus.round.ToString() });
-            updateDraftStatus.Update.ExpressionAttributeValues.Add(":negative_one", new AttributeValue() { N = "-1" });
-            updateDraftStatus.Update.ExpressionAttributeValues.Add(":true", new AttributeValue() { BOOL = true });
-            updateDraftStatus.Update.ConditionExpression = "#order_index = :old_order_index AND #current_round = :old_round";
-            updateDraftStatus.Update.ExpressionAttributeValues.Add(":log", new AttributeValue() { S = logStringBuilder.ToString() });
-            updateDraftStatus.Update.UpdateExpression = "SET finished = :true, #log = :log, #order_index = :negative_one, #current_round = :negative_one";
-            writeItems.Add(updateDraftStatus);
-
-            TransactWriteItemsRequest transactWriteItemsRequest = new TransactWriteItemsRequest();
-            transactWriteItemsRequest.TransactItems = writeItems;
-            var transactionResult = dynamoDBClient.TransactWriteItemsAsync(transactWriteItemsRequest).Result;
         }
 
         public static Team[] loadTeamsForLotteryAsTeams()
@@ -550,170 +565,5 @@ namespace NcaaTournamentPool
 
             return teams.ToArray();
         }
-
-        /*
-                public static void pickATeam(Team theTeam, Player thePlayer)
-                {
-                    string DB = HttpContext.Current.Server.MapPath(SETPATH);
-                    dbConnect = new OleDbConnection(CONNECTSTRING + DB);
-
-                    OleDbCommand olecommand = new OleDbCommand("selectTeam", dbConnect);
-                    olecommand.CommandType = CommandType.StoredProcedure;
-
-                    OleDbParameter parameters = new OleDbParameter("@UserId", OleDbType.Integer);
-                    parameters.Value = thePlayer.userId;
-                    olecommand.Parameters.Add(parameters);
-
-                    parameters = new OleDbParameter("@SCurveRank", OleDbType.Integer);
-                    parameters.Value = theTeam.sCurveRank;
-                    olecommand.Parameters.Add(parameters);
-
-                    olecommand.Connection.Open();
-
-                    olecommand.ExecuteNonQuery();
-
-                    dbConnect.Close();
-                }
-
-
-                
-
-
-
-                private static void writeToLog(string logstring)
-                {
-                    string logfile = HttpContext.Current.Server.MapPath(LOGPATH);
-                    StreamWriter filetowrite = new StreamWriter(logfile, true);
-                    filetowrite.WriteLine(logstring + "<br />");
-                    filetowrite.Close();
-                }
-
-                private static void clearLog()
-                {
-                    string logfile = HttpContext.Current.Server.MapPath(LOGPATH);
-                    StreamWriter filetowrite = new StreamWriter(logfile, false);
-                    filetowrite.Close();
-                }
-
-
-
-                public static DataTable loadUsers(HttpServerUtility theserver)
-                {
-                    string DB = theserver.MapPath(SETPATH);
-                    dbConnect = new OleDbConnection(CONNECTSTRING + DB);
-
-                    OleDbDataAdapter dbadapter;
-                    DataSet clubdataset;
-
-                    OleDbCommand olecommand = new OleDbCommand("getAllUsers", dbConnect);
-                    olecommand.CommandType = CommandType.StoredProcedure;
-
-                    dbadapter = new OleDbDataAdapter(olecommand);
-
-                    clubdataset = new DataSet();
-                    dbadapter.Fill(clubdataset, "clubsdata");
-
-                    return clubdataset.Tables["clubsdata"];
-                }
-
-                public static DataTable loadRounds(HttpServerUtility theserver)
-                {
-                    string DB = theserver.MapPath(SETPATH);
-                    dbConnect = new OleDbConnection(CONNECTSTRING + DB);
-
-                    OleDbDataAdapter dbadapter;
-                    DataSet clubdataset;
-
-                    OleDbCommand olecommand = new OleDbCommand("getAllRounds", dbConnect);
-                    olecommand.CommandType = CommandType.StoredProcedure;
-
-                    dbadapter = new OleDbDataAdapter(olecommand);
-
-                    clubdataset = new DataSet();
-                    dbadapter.Fill(clubdataset, "clubsdata");
-
-                    return clubdataset.Tables["clubsdata"];
-                }
-
-                public static DataTable loadTeamsDb()
-                {
-                    string DB = HttpContext.Current.Server.MapPath(SETPATH);
-                    dbConnect = new OleDbConnection(CONNECTSTRING + DB);
-
-                    OleDbDataAdapter dbadapter;
-                    DataSet clubdataset;
-
-                    OleDbCommand olecommand = new OleDbCommand("getTeamsForEditing", dbConnect);
-                    olecommand.CommandType = CommandType.StoredProcedure;
-
-                    dbadapter = new OleDbDataAdapter(olecommand);
-
-                    clubdataset = new DataSet();
-                    dbadapter.Fill(clubdataset, "clubsdata");
-
-                    return clubdataset.Tables["clubsdata"];
-
-                }
-
-                public static DataTable loadUnselectedTeams(HttpServerUtility theserver)
-                {
-                    string DB = theserver.MapPath(SETPATH);
-                    dbConnect = new OleDbConnection(CONNECTSTRING + DB);
-
-                    OleDbDataAdapter dbadapter;
-                    DataSet clubdataset;
-
-                    OleDbCommand olecommand = new OleDbCommand("getUnselectedTeams", dbConnect);
-                    olecommand.CommandType = CommandType.StoredProcedure;
-
-                    dbadapter = new OleDbDataAdapter(olecommand);
-
-                    clubdataset = new DataSet();
-                    dbadapter.Fill(clubdataset, "clubsdata");
-
-                    return clubdataset.Tables["clubsdata"];
-
-                }
-
-                public static void updateTeamInfo(Team updatedTeam)
-                {
-                    string OFFICERDB = HttpContext.Current.Server.MapPath(SETPATH);
-                    dbConnect = new OleDbConnection(CONNECTSTRING + OFFICERDB);
-
-                    OleDbCommand olecommand = new OleDbCommand("updateTeamInfo", dbConnect);
-                    olecommand.CommandType = CommandType.StoredProcedure;
-
-                    OleDbParameter parameters = new OleDbParameter("@TeamName", OleDbType.Char);
-                    parameters.Value = updatedTeam.teamName;
-                    olecommand.Parameters.Add(parameters);
-
-                    parameters = new OleDbParameter("@TeamWins", OleDbType.Integer);
-                    parameters.Value = updatedTeam.wins;
-                    olecommand.Parameters.Add(parameters);
-
-                    parameters = new OleDbParameter("@TeamLosses", OleDbType.Integer);
-                    parameters.Value = updatedTeam.losses;
-                    olecommand.Parameters.Add(parameters);
-
-                    parameters = new OleDbParameter("@Eliminated", OleDbType.Boolean);
-                    parameters.Value = updatedTeam.eliminated;
-                    olecommand.Parameters.Add(parameters);
-
-
-                    parameters = new OleDbParameter("@SCurveRank", OleDbType.Integer);
-                    parameters.Value = updatedTeam.sCurveRank;
-                    olecommand.Parameters.Add(parameters);
-
-                    olecommand.Connection.Open();
-
-                    olecommand.ExecuteNonQuery();
-
-                    dbConnect.Close();
-
-                    return;
-                }
-
-
-                */
     }
 }
