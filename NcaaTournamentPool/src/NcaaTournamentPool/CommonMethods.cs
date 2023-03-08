@@ -164,13 +164,16 @@ namespace NcaaTournamentPool
             }
             nowStatus.rounds = theRounds;
 
-            int currentPickOrder = nowStatus.rounds[nowStatus.round - 1].roundOrder[nowStatus.currentOrderIndex];
-            foreach (Player player in nowStatus.players)
+            if (nowStatus.currentOrderIndex >= 0 && nowStatus.currentOrderIndex < nowStatus.players.Length && nowStatus.round > 0 && nowStatus.round <= nowStatus.rounds.Length)
             {
-                if (player.initialPickOrder == currentPickOrder)
+                int currentPickOrder = nowStatus.rounds[nowStatus.round - 1].roundOrder[nowStatus.currentOrderIndex];
+                foreach (Player player in nowStatus.players)
                 {
-                    nowStatus.currentPlayer = player;
-                    break;
+                    if (player.initialPickOrder == currentPickOrder)
+                    {
+                        nowStatus.currentPlayer = player;
+                        break;
+                    }
                 }
             }
 
@@ -260,7 +263,7 @@ namespace NcaaTournamentPool
             teamsFilter.AddCondition("s-curve-rank", ScanOperator.In, attributeValues);
 
             var teamsTableScan = teamsTable.Scan(teamsFilter);
-            var teamsRetrieved = teamsTableScan.GetRemainingAsync().Result;
+            var teamsRetrieved = await teamsTableScan.GetRemainingAsync();
             List<Team> teams = new List<Team>();
 
             foreach (Document teamDocument in teamsRetrieved)
@@ -336,7 +339,7 @@ namespace NcaaTournamentPool
             updateDraftStatus.Update.ExpressionAttributeValues.Add(":old_round", new AttributeValue() { N = nowStatus.round.ToString() });
             updateDraftStatus.Update.ConditionExpression = "#order_index = :old_order_index AND #current_round = :old_round";
             updateDraftStatus.Update.ExpressionAttributeValues.Add(":log", new AttributeValue() { S = logStringBuilder.ToString() });
-            if (nowStatus.round <= nowStatus.rounds.Length)
+            if (newRound <= nowStatus.rounds.Length)
             {
                 updateDraftStatus.Update.ExpressionAttributeValues.Add(":new_order_index", new AttributeValue() { N = newOrderIndex.ToString() });
                 updateDraftStatus.Update.ExpressionAttributeValues.Add(":new_round", new AttributeValue() { N = newRound.ToString() });
@@ -344,7 +347,8 @@ namespace NcaaTournamentPool
             }
             else
             {
-                updateDraftStatus.Update.UpdateExpression = "SET finished = TRUE, #log = :log";
+                updateDraftStatus.Update.ExpressionAttributeValues.Add(":true", new AttributeValue() { BOOL = true });
+                updateDraftStatus.Update.UpdateExpression = "SET finished = :true, #log = :log";
             }
             writeItems.Add(updateDraftStatus);
 
@@ -364,9 +368,187 @@ namespace NcaaTournamentPool
 
             if (newRound > nowStatus.rounds.Length)
             {
-                //runEndOfDraftLottery();
+                runEndOfDraftLottery();
             }
 
+        }
+
+        public static void runEndOfDraftLottery()
+        {
+            AmazonDynamoDBClient dynamoDBClient = new AmazonDynamoDBClient(dynamoDBConfig);
+            Table teamsTable = Table.LoadTable(dynamoDBClient, GetTableName("teams"));
+            List<TransactWriteItem> writeItems = new List<TransactWriteItem>();
+
+            CurrentStatus currentStatus = loadCurrentStatus().Result;
+            StringBuilder logStringBuilder = new StringBuilder(currentStatus.log);
+            logStringBuilder.Append("<b>End of Draft Lottery</b><br />");
+            Team[] theTeams = loadTeamsForLotteryAsTeams();
+
+            int totalEntries = 0;
+            int entriesToDeduct = 1;
+
+            foreach (Player thisPlayer in currentStatus.players)
+            {
+                // Adjust for the 2011 doubling of points
+                thisPlayer.pointsHeldOver = Convert.ToInt32(Math.Floor(thisPlayer.pointsHeldOver / 2.0));
+
+                totalEntries = totalEntries + thisPlayer.pointsHeldOver;
+            }
+
+            if (totalEntries == 0)
+            {
+                foreach (Player thisPlayer in currentStatus.players)
+                {
+                    thisPlayer.pointsHeldOver = 1;
+                    totalEntries = totalEntries + thisPlayer.pointsHeldOver;
+                }
+            }
+
+            foreach (Player thisPlayer in currentStatus.players)
+            {
+                logStringBuilder.Append("<b>" + thisPlayer.name + "</b> has <b>" + thisPlayer.pointsHeldOver.ToString() + "</b> entries.<br />");
+            }
+
+            logStringBuilder.Append("<br />");
+
+            while (totalEntries < theTeams.Length)
+            {
+                totalEntries = 0;
+                foreach (Player thisPlayer in currentStatus.players)
+                {
+                    thisPlayer.pointsHeldOver = thisPlayer.pointsHeldOver * 2;
+                    totalEntries = totalEntries + thisPlayer.pointsHeldOver;
+                }
+                entriesToDeduct = entriesToDeduct * 2;
+            }
+
+            int[] theLotteryArray;
+
+            Random meRandom = new Random();
+
+            int teamsDone = 0;
+
+            foreach (Team thisTeam in theTeams)
+            {
+                while (totalEntries < (theTeams.Length - teamsDone))
+                {
+                    if (totalEntries == 0)
+                    {
+                        foreach (Player thisPlayer in currentStatus.players)
+                        {
+                            thisPlayer.pointsHeldOver = 1;
+                            totalEntries = totalEntries + thisPlayer.pointsHeldOver;
+                            entriesToDeduct = 1;
+                        }
+                    }
+                    else
+                    {
+                        totalEntries = 0;
+                        foreach (Player thisPlayer in currentStatus.players)
+                        {
+                            thisPlayer.pointsHeldOver = thisPlayer.pointsHeldOver * 2;
+                            totalEntries = totalEntries + thisPlayer.pointsHeldOver;
+                        }
+                        entriesToDeduct = entriesToDeduct * 2;
+                    }
+                }
+
+                theLotteryArray = new int[totalEntries];
+
+                int startIndex = 0;
+                int playerIndex = 0;
+
+                foreach (Player thisPlayer in currentStatus.players)
+                {
+                    if (thisPlayer.pointsHeldOver != 0)
+                    {
+                        for (int i = startIndex; i < startIndex + thisPlayer.pointsHeldOver; i++)
+                        {
+                            theLotteryArray[i] = playerIndex;
+                        }
+                    }
+                    startIndex = startIndex + thisPlayer.pointsHeldOver;
+                    playerIndex++;
+                }
+
+
+                int givenTo = theLotteryArray[meRandom.Next() % totalEntries];
+
+                TransactWriteItem updateTeam = new TransactWriteItem();
+                updateTeam.Update = new Update();
+                updateTeam.Update.TableName = teamsTable.TableName;
+                updateTeam.Update.Key.Add("s-curve-rank", new AttributeValue() { S = thisTeam.sCurveRank.ToString() });
+                updateTeam.Update.ExpressionAttributeNames.Add("#selected_by", "selected-by");
+                updateTeam.Update.ExpressionAttributeValues.Add(":selected_by", new AttributeValue() { S = currentStatus.players[givenTo].userId.ToString() });
+                updateTeam.Update.UpdateExpression = "SET #selected_by = :selected_by";
+                writeItems.Add(updateTeam);
+
+                logStringBuilder.Append(thisTeam.teamName + " (" + thisTeam.rank.ToString() + ", " + currentStatus.brackets[thisTeam.bracketId] + ", " + (thisTeam.cost).ToString() + " points) ");
+                logStringBuilder.Append("is awarded to <b>" + currentStatus.players[givenTo].name + "</b>.<br />");
+
+                currentStatus.players[givenTo].pointsHeldOver = currentStatus.players[givenTo].pointsHeldOver - entriesToDeduct;
+
+                totalEntries = 0;
+
+                foreach (Player thisPlayer in currentStatus.players)
+                {
+                    totalEntries = totalEntries + thisPlayer.pointsHeldOver;
+                }
+
+                teamsDone++;
+            }
+
+            Table statusTable = Table.LoadTable(dynamoDBClient, GetTableName("draftstatus"));
+            TransactWriteItem updateDraftStatus = new TransactWriteItem();
+            updateDraftStatus.Update = new Update();
+            updateDraftStatus.Update.TableName = statusTable.TableName;
+            updateDraftStatus.Update.Key.Add("draft-id", new AttributeValue() { N = "1" });
+            updateDraftStatus.Update.ExpressionAttributeNames.Add("#order_index", "order-index");
+            updateDraftStatus.Update.ExpressionAttributeNames.Add("#current_round", "current-round");
+            updateDraftStatus.Update.ExpressionAttributeNames.Add("#log", "log");
+            updateDraftStatus.Update.ExpressionAttributeValues.Add(":old_order_index", new AttributeValue() { N = currentStatus.currentOrderIndex.ToString() });
+            updateDraftStatus.Update.ExpressionAttributeValues.Add(":old_round", new AttributeValue() { N = currentStatus.round.ToString() });
+            updateDraftStatus.Update.ExpressionAttributeValues.Add(":negative_one", new AttributeValue() { N = "-1" });
+            updateDraftStatus.Update.ExpressionAttributeValues.Add(":true", new AttributeValue() { BOOL = true });
+            updateDraftStatus.Update.ConditionExpression = "#order_index = :old_order_index AND #current_round = :old_round";
+            updateDraftStatus.Update.ExpressionAttributeValues.Add(":log", new AttributeValue() { S = logStringBuilder.ToString() });
+            updateDraftStatus.Update.UpdateExpression = "SET finished = :true, #log = :log, #order_index = :negative_one, #current_round = :negative_one";
+            writeItems.Add(updateDraftStatus);
+
+            TransactWriteItemsRequest transactWriteItemsRequest = new TransactWriteItemsRequest();
+            transactWriteItemsRequest.TransactItems = writeItems;
+            var transactionResult = dynamoDBClient.TransactWriteItemsAsync(transactWriteItemsRequest).Result;
+        }
+
+        public static Team[] loadTeamsForLotteryAsTeams()
+        {
+            AmazonDynamoDBClient dynamoDBClient = new AmazonDynamoDBClient(dynamoDBConfig);
+            Table teamsTable = Table.LoadTable(dynamoDBClient, GetTableName("teams"));
+            ScanFilter teamsFilter = new ScanFilter();
+            teamsFilter.AddCondition("selected-by", ScanOperator.Equal, "0");
+
+            var teamsTableScan = teamsTable.Scan(teamsFilter);
+            var teamsRetrieved = teamsTableScan.GetRemainingAsync().Result;
+            teamsRetrieved.Sort((x, y) => x["s-curve-rank"].AsInt().CompareTo(y["s-curve-rank"].AsInt()));
+            List<Team> teams = new List<Team>();
+
+            foreach (Document teamDocument in teamsRetrieved)
+            {
+                teams.Add(new Team()
+                {
+                    sCurveRank = teamDocument["s-curve-rank"].AsInt(),
+                    teamName = teamDocument["team-name"].AsString(),
+                    bracketId = teamDocument["bracket-id"].AsInt(),
+                    eliminated = teamDocument["eliminated"].AsBoolean(),
+                    rank = teamDocument["team-rank"].AsInt(),
+                    wins = teamDocument["team-wins"].AsInt(),
+                    losses = teamDocument["team-losses"].AsInt(),
+                    cost = teamDocument["cost"].AsInt(),
+                    pickedByPlayer = teamDocument["selected-by"].AsInt()
+                });
+            }
+
+            return teams.ToArray();
         }
 
         /*
@@ -394,178 +576,9 @@ namespace NcaaTournamentPool
                 }
 
 
-                public static void runEndOfDraftLottery()
-                {
-
-                    string logstring = "<b>End of Draft Lottery</b><br />";
-
-                    Player[] thePlayers = loadPlayersForLobby();
-                    Team[] theTeams = loadTeamsForLotteryAsTeams();
-
-                    int totalEntries = 0;
-                    int entriesToDeduct = 1;
-
-                    foreach (Player thisPlayer in thePlayers)
-                    {
-                        // Adjust for the 2011 doubling of points
-                        thisPlayer.pointsHeldOver = Convert.ToInt32(Math.Floor(thisPlayer.pointsHeldOver / 2.0));
-
-                        totalEntries = totalEntries + thisPlayer.pointsHeldOver;
-                    }
-
-                    if (totalEntries == 0)
-                    {
-                        foreach (Player thisPlayer in thePlayers)
-                        {
-                            thisPlayer.pointsHeldOver = 1;
-                            totalEntries = totalEntries + thisPlayer.pointsHeldOver;
-                        }
-                    }
-
-                    foreach (Player thisPlayer in thePlayers)
-                    {
-                        logstring = logstring + "<b>" + thisPlayer.firstName + " " + thisPlayer.lastName + "</b> has <b>" + thisPlayer.pointsHeldOver.ToString() + "</b> entries.<br />";
-                    }
-
-                    logstring = logstring + "<br />";
-
-                    while (totalEntries < theTeams.Length)
-                    {
-                        totalEntries = 0;
-                        foreach (Player thisPlayer in thePlayers)
-                        {
-                            thisPlayer.pointsHeldOver = thisPlayer.pointsHeldOver * 2;
-                            totalEntries = totalEntries + thisPlayer.pointsHeldOver;
-                        }
-                        entriesToDeduct = entriesToDeduct * 2;
-                    }
-
-                    int[] theLotteryArray;
-
-                    Random meRandom = new Random();
-
-                    int teamsDone = 0;
+                
 
 
-
-                    foreach (Team thisTeam in theTeams)
-                    {
-
-                        while (totalEntries < (theTeams.Length - teamsDone))
-                        {
-                            if (totalEntries == 0)
-                            {
-                                foreach (Player thisPlayer in thePlayers)
-                                {
-                                    thisPlayer.pointsHeldOver = 1;
-                                    totalEntries = totalEntries + thisPlayer.pointsHeldOver;
-                                    entriesToDeduct = 1;
-                                }
-                            }
-                            else
-                            {
-                                totalEntries = 0;
-                                foreach (Player thisPlayer in thePlayers)
-                                {
-                                    thisPlayer.pointsHeldOver = thisPlayer.pointsHeldOver * 2;
-                                    totalEntries = totalEntries + thisPlayer.pointsHeldOver;
-                                }
-                                entriesToDeduct = entriesToDeduct * 2;
-                            }
-                        }
-
-                        theLotteryArray = new int[totalEntries];
-
-                        int startIndex = 0;
-                        int playerIndex = 0;
-
-                        foreach (Player thisPlayer in thePlayers)
-                        {
-                            if (thisPlayer.pointsHeldOver != 0)
-                            {
-                                for (int i = startIndex; i < startIndex + thisPlayer.pointsHeldOver; i++)
-                                {
-                                    theLotteryArray[i] = playerIndex;
-                                }
-                            }
-                            startIndex = startIndex + thisPlayer.pointsHeldOver;
-                            playerIndex++;
-                        }
-
-
-                        int givenTo = theLotteryArray[meRandom.Next() % totalEntries];
-
-                        pickATeam(thisTeam, thePlayers[givenTo]);
-
-                        logstring = logstring + thisTeam.teamName + " (" + thisTeam.rank.ToString() + ", " + thisTeam.bracket + ", " + (thisTeam.cost).ToString() + " points) ";
-                        logstring = logstring + "is awarded to <b>" + thePlayers[givenTo].firstName + " " + thePlayers[givenTo].lastName + "</b>.<br />";
-
-                        thePlayers[givenTo].pointsHeldOver = thePlayers[givenTo].pointsHeldOver - entriesToDeduct;
-
-                        totalEntries = 0;
-
-                        foreach (Player thisPlayer in thePlayers)
-                        {
-                            totalEntries = totalEntries + thisPlayer.pointsHeldOver;
-                        }
-
-                        teamsDone++;
-                    }
-
-                    OleDbCommand olecommand;
-
-                    olecommand = new OleDbCommand("finishDraft", dbConnect);
-                    olecommand.CommandType = CommandType.StoredProcedure;
-
-                    olecommand.Connection.Open();
-
-                    olecommand.ExecuteNonQuery();
-
-                    dbConnect.Close();
-
-                    writeToLog(logstring);
-                }
-
-                public static Team[] loadTeamsForLotteryAsTeams()
-                {
-                    string DB = HttpContext.Current.Server.MapPath(SETPATH);
-                    dbConnect = new OleDbConnection(CONNECTSTRING + DB);
-
-                    OleDbDataAdapter dbadapter;
-                    DataSet clubdataset;
-
-                    OleDbCommand olecommand = new OleDbCommand("getUnselectedTeamsForLottery", dbConnect);
-                    olecommand.CommandType = CommandType.StoredProcedure;
-
-                    dbadapter = new OleDbDataAdapter(olecommand);
-
-                    clubdataset = new DataSet();
-                    dbadapter.Fill(clubdataset, "clubsdata");
-
-                    DataTable teamsTable = clubdataset.Tables["clubsdata"];
-
-                    int recordCount = teamsTable.Rows.Count;
-
-                    Team[] theTeams = new Team[recordCount];
-
-                    CurrentStatus nowStatus = new CurrentStatus();
-
-                    for (int i = 0; i < recordCount; i++)
-                    {
-                        theTeams[i] = new Team();
-                        theTeams[i].sCurveRank = Convert.ToInt32(teamsTable.Rows[i]["SCurveRank"]);
-                        theTeams[i].teamName = teamsTable.Rows[i]["TeamName"].ToString();
-                        theTeams[i].bracket = teamsTable.Rows[i]["Bracket"].ToString();
-                        theTeams[i].bracketId = Convert.ToInt32(teamsTable.Rows[i]["BracketId"].ToString());
-                        theTeams[i].rank = Convert.ToInt32(teamsTable.Rows[i]["TeamRank"].ToString());
-                        theTeams[i].wins = Convert.ToInt32(teamsTable.Rows[i]["TeamWins"].ToString());
-                        theTeams[i].losses = Convert.ToInt32(teamsTable.Rows[i]["TeamLosses"].ToString());
-                        theTeams[i].cost = Convert.ToInt32(teamsTable.Rows[i]["Cost"]);
-                        theTeams[i].pickedByPlayer = 0;
-                    }
-
-                    return theTeams;
-                }
 
                 private static void writeToLog(string logstring)
                 {
