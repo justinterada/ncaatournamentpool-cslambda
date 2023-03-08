@@ -9,18 +9,18 @@ namespace NcaaTournamentPool.Pages
 {
 	public class LobbyModel : PageModel
     {
-        public CurrentStatus DraftStatus { get; set; }
+        public CurrentStatus CurrentStatus { get; set; }
         public Round[] Rounds { get; set; }
         public Player[] Players { get; set; }
 
-        public string UserId { get; set; }
+        public int UserId { get; set; }
 
         public void OnGet()
         {
-            DraftStatus = CommonMethods.loadCurrentStatus().Result;
-            Rounds = DraftStatus.rounds;
-            Players = DraftStatus.players;
-            UserId = this.Request.Query["userId"];
+            CurrentStatus = CommonMethods.loadCurrentStatus().Result;
+            Rounds = CurrentStatus.rounds;
+            Players = CurrentStatus.players;
+            UserId = Convert.ToInt32(this.Request.Query["userId"]);
         }
     }
 }

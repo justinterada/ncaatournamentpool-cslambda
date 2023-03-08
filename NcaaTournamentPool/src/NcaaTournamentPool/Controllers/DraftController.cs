@@ -67,6 +67,14 @@ namespace NcaaTournamentPool.Controllers
             return AcceptedAtAction(null);
         }
 
+        [HttpPost("runlottery")]
+        public IActionResult Post()
+        {
+            CommonMethods.runEndOfDraftLottery();
+
+            return AcceptedAtAction(null);
+        }
+
         // PUT api/draft/5
         [HttpPut("{id}")]
         public void Put(int id, [FromBody]string value)

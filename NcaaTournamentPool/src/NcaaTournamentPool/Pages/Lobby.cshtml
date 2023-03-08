@@ -7,21 +7,21 @@
 <h1>Lobby</h1>
 <p><a id="logOutButton" href="~/">Log out</a></p>
 
-@if (!Model.DraftStatus.finished)
+@if (!Model.CurrentStatus.finished)
 {
     <div id="roundWrapper">
         @foreach (var thisRound in Model.Rounds)
         {
-            <div id="round\@thisRound.roundNumber" class="@(thisRound.roundNumber == Model.DraftStatus.round ? "round currentRound" : "round")">
+            <div id="round\@thisRound.roundNumber" class="@(thisRound.roundNumber == Model.CurrentStatus.round ? "round currentRound" : "round")">
                 <h2>Round @thisRound.roundNumber</h2>
                 <span class="roundDescription">
                     Points to Spend: @thisRound.pointsToSpend<br />
                     Maximum Hold Over: @thisRound.maxHoldOverPoints
                 </span>
                 <ol class="roundOrder">
-                    @for (int n = 0; n < Model.DraftStatus.players.Length; n++)
+                    @for (int n = 0; n < Model.CurrentStatus.players.Length; n++)
                     {
-                        if (n == Model.DraftStatus.currentOrderIndex && thisRound.roundNumber == Model.DraftStatus.round)
+                        if (n == Model.CurrentStatus.currentOrderIndex && thisRound.roundNumber == Model.CurrentStatus.round)
                         {
                             <li class="currentPlayer">@Model.Players[thisRound.roundOrder[n] - 1].name</li>
                         }
@@ -37,7 +37,7 @@
     </div>
     <br style="clear: both;" />
 
-    if (Model.UserId == Model.Players[Model.Rounds[Model.DraftStatus.round - 1].roundOrder[Model.DraftStatus.currentOrderIndex] - 1].userId.ToString())
+    if (Model.UserId == Model.CurrentStatus.currentUserId)
     {
         <p><a id="chooseTeamsLink" href="~/ChooseTeams?userId=@Model.UserId">It's Your Turn!  Click Here to Choose Teams!</a></p>
     }
@@ -50,7 +50,7 @@ else
         <tr><th>Player</th><th>Entries</th></tr>
         @foreach (Player thisPlayer in Model.Players)
         {
-            <tr><td>@thisPlayer.name</td><td>@(thisPlayer.pointsHeldOver / 2).ToString()</td></tr>
+            <tr><td>@thisPlayer.name</td><td>@(thisPlayer.pointsHeldOver / 2)</td></tr>
         }
     </table>
 }
@@ -58,7 +58,7 @@ else
 <p><a href="javascript:openGallery('bracketview.aspx',900,530)">Open bracket in new window</a></p>
 <h3>Log</h3>
 
-@Html.Raw(Model.DraftStatus.log)
+@Html.Raw(Model.CurrentStatus.log)
 
 @section Scripts {
     <script language="javascript" src="~/js/Lobby.js" type="text/javascript"></script>
