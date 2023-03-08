@@ -68,9 +68,17 @@ namespace NcaaTournamentPool.Controllers
         }
 
         [HttpPost("runlottery")]
-        public IActionResult Post()
+        public IActionResult RunLottery()
         {
             CommonMethods.runEndOfDraftLottery();
+
+            return AcceptedAtAction(null);
+        }
+
+        [HttpPost("resetdraft")]
+        public IActionResult ResetDraft()
+        {
+            CommonMethods.resetDraft();
 
             return AcceptedAtAction(null);
         }

@@ -1,0 +1,52 @@
+﻿@page
+@model NcaaTournamentPool.Pages.DraftUtilitiesModel
+@{
+    ViewData["Title"] = "Draft Utilities";
+}
+
+<h1>Draft Utilities</h1>
+
+<p><button id="runEndOfDraftLottery">Run end of draft lottery</button></p>
+<p><button id="resetDraft">Reset draft</button></p>
+
+@section Scripts
+{
+    <script type="text/javascript">$("#runEndOfDraftLottery").click(function () {
+        let url = 'api/draft/runlottery';
+        let data = {
+        };
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        }).then(res => {
+            if (res.ok) {
+                alert("Success!")
+            } else {
+                alert("Failure!");
+            }
+        });
+    });
+    $("#resetDraft").click(function () {
+        let url = 'api/draft/resetdraft';
+        let data = {
+        };
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        }).then(res => {
+            if (res.ok) {
+                alert("Success!")
+            } else {
+                alert("Failure!");
+            }
+        });
+    });</script>
+}

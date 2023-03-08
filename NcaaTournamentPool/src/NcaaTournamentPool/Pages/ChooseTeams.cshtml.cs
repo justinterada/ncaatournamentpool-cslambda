@@ -102,19 +102,19 @@ namespace NcaaTournamentPool.Pages
 
             List<Team> allTeams = new List<Team>();
 
-            Team[] teams = CommonMethods.loadTeamsForBracketView(1).Result;
+            Team[] teams = CommonMethods.loadTeamsForBracketView(1);
             _bracketOneTeams = CommonMethods.SortTeamsByRank(teams);
             allTeams.AddRange(teams);
 
-            teams = CommonMethods.loadTeamsForBracketView(2).Result;
+            teams = CommonMethods.loadTeamsForBracketView(2);
             _bracketTwoTeams = CommonMethods.SortTeamsByRank(teams);
             allTeams.AddRange(teams);
 
-            teams = CommonMethods.loadTeamsForBracketView(3).Result;
+            teams = CommonMethods.loadTeamsForBracketView(3);
             _bracketThreeTeams = CommonMethods.SortTeamsByRank(teams);
             allTeams.AddRange(teams);
 
-            teams = CommonMethods.loadTeamsForBracketView(4).Result;
+            teams = CommonMethods.loadTeamsForBracketView(4);
             _bracketFourTeams = CommonMethods.SortTeamsByRank(teams);
             allTeams.AddRange(teams);
 
