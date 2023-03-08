@@ -8,6 +8,6 @@ public class IndexModel : PageModel
 
     public void OnGet()
     {
-        Players = CommonMethods.loadPlayersForLobby().Result;
+        Players = CommonMethods.loadCurrentStatus().Result.players;
     }
 }

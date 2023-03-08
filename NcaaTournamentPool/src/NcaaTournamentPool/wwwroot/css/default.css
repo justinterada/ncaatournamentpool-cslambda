@@ -154,3 +154,7 @@ div.round ol.roundOrder li.currentPlayer
 	font-weight: bold;
 	color: #0066FF;
 }
+
+.no-close .ui-dialog-titlebar-close {
+	display: none;
+}

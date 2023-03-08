@@ -18,8 +18,8 @@ namespace NcaaTournamentPool.Pages
         public void OnGet()
         {
             DraftStatus = CommonMethods.loadCurrentStatus().Result;
-            Rounds = CommonMethods.loadRoundsForLobby().Result;
-            Players = CommonMethods.loadPlayersForLobby().Result;
+            Rounds = DraftStatus.rounds;
+            Players = DraftStatus.players;
             UserId = this.Request.Query["userId"];
         }
     }

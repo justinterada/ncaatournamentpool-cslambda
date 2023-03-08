@@ -1,6 +1,7 @@
 ﻿@page
 @model NcaaTournamentPool.Pages.ChooseTeamsModel
 @{
+    ViewData["Title"] = "Choose Your Teams";
 }
 
 <h1 id="topLevelHeader">Choose Your Teams: Round @Model.CurrentStatus.round</h1>
@@ -11,9 +12,9 @@
             <span id="spanPointsRemaining" style="font-weight: bold; font-size: 16pt; border: solid 2px Black; background-color: Black; color: White; display: inline-block; width: 30px; height: 24px; vertical-align: middle; text-align: center;"></span>
             <span style="vertical-align: middle;">
                 Round @Model.CurrentStatus.round, maximum hold over: <span id="span1" style="font-weight: bold">@Model.CurrentRound.maxHoldOverPoints</span>
-                <button style="margin: 0px;" id="buttonSelectBeforeConfirm" onclick="return confirmSelect(a);">Select</button>
+                <button style="margin: 0px;" id="buttonSelectBeforeConfirm" onclick="return confirmSelect();">Select</button>
             </span>
-            <button ID="buttonSubmit" style="display:none;" />
+            <button id="buttonSubmit" style="display:none;" />
         </div>
         <div id="fourPanelRadioSection"><input type="radio" id="bracketOneRadio" name="fourPanelRadio" checked="checked" /><label for="bracketOneRadio" style="width:25%;">@Model.BracketOneName</label><input type="radio" id="bracketFourRadio" name="fourPanelRadio" /><label for="bracketFourRadio" style="width:25%;">@Model.BracketFourName</label><input type="radio" id="bracketTwoRadio" name="fourPanelRadio" /><label for="bracketTwoRadio" style="width:25%;">@Model.BracketTwoName</label><input type="radio" id="bracketThreeRadio" name="fourPanelRadio" /><label for="bracketThreeRadio" style="width:25%;">@Model.BracketThreeName</label></div>
         <div id="twoPanelRadioSection"><input type="radio" id="bracketOneAndFourRadio" name="twoPanelRadio" checked="checked" /><label for="bracketOneAndFourRadio" style="width:50%;">@Model.BracketOneName and @Model.BracketFourName</label><input type="radio" id="bracketTwoAndThreeRadio" name="twoPanelRadio" /><label for="bracketTwoAndThreeRadio" style="width:50%;">@Model.BracketTwoName and @Model.BracketThreeName</label></div>
@@ -25,28 +26,32 @@
 </div>
 <div id="brackets1and4">
     <div id="bracket1">
-        <h2 id="bracket1Header">@Model.BracketOneName</h2>
+        <h2 id="bracket1Header">@Model.CurrentStatus.brackets[1]</h2>
         <component type="typeof(NcaaTournamentPool.Shared.Bracket)" render-mode="Static" param-bracketTeams="@Model.BracketOneTeams" param-players="@Model.Players" />
     </div>
     <div id="bracket4">
-        <h2 id="bracket4Header">@Model.BracketFourName</h2>
+        <h2 id="bracket4Header">@Model.CurrentStatus.brackets[4]</h2>
         <component type="typeof(NcaaTournamentPool.Shared.Bracket)" render-mode="Static" param-bracketTeams="@Model.BracketFourTeams" param-players="@Model.Players" />
     </div>
 </div>
 
 <div id="brackets2and3">
     <div id="bracket2">
-        <h2 id="bracket2Header">@Model.BracketTwoName</h2>
+        <h2 id="bracket2Header">@Model.CurrentStatus.brackets[2]</h2>
         <component type="typeof(NcaaTournamentPool.Shared.Bracket)" render-mode="Static" param-bracketTeams="@Model.BracketTwoTeams" param-players="@Model.Players" />
     </div>
     <div id="bracket3">
-        <h2 id="bracket3Header">@Model.BracketThreeName</h2>
+        <h2 id="bracket3Header">@Model.CurrentStatus.brackets[3]</h2>
         <component type="typeof(NcaaTournamentPool.Shared.Bracket)" render-mode="Static" param-bracketTeams="@Model.BracketThreeTeams" param-players="@Model.Players" />
     </div>
 </div>
 
 <div id="dialog-confirm" title="Are you sure?" style="display: none;">
     <p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span>Are you sure you want to select these teams?</p>
+</div>
+
+<div id="dialog-busy" title="Submitting picks" style="display: none;">
+    <p><span class="ui-icon ui-icon-info" style="float:left; margin:0 7px 20px 0;"></span>Submitting your picks...</p>
 </div>
 
 @section Scripts {
