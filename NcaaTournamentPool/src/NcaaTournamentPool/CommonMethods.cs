@@ -564,5 +564,32 @@ namespace NcaaTournamentPool
 
             return teams.ToArray();
         }
+
+        public static void setEliminatedTeams(int[] sCurveRanks)
+        {
+            AmazonDynamoDBClient dynamoDBClient = new AmazonDynamoDBClient(dynamoDBConfig);
+
+            HashSet<int> sCurveRankSet = new HashSet<int>();
+            foreach (int eliminatedTeam in sCurveRanks) {
+                sCurveRankSet.Add(eliminatedTeam);
+            }
+
+            List<TransactWriteItem> writeItems = new List<TransactWriteItem>();
+            Table teamsTable = Table.LoadTable(dynamoDBClient, GetTableName("teams"));
+            foreach (Team team in loadAllTeams().Result)
+            {
+                TransactWriteItem updateTeam = new TransactWriteItem();
+                updateTeam.Update = new Update();
+                updateTeam.Update.TableName = teamsTable.TableName;
+                updateTeam.Update.Key.Add("s-curve-rank", new AttributeValue() { S = team.sCurveRank.ToString() });
+                updateTeam.Update.ExpressionAttributeValues.Add(":eliminated", new AttributeValue() { BOOL = sCurveRankSet.Contains(team.sCurveRank) });
+                updateTeam.Update.UpdateExpression = "SET eliminated = :eliminated";
+                writeItems.Add(updateTeam);
+            }
+
+            TransactWriteItemsRequest transactWriteItemsRequest = new TransactWriteItemsRequest();
+            transactWriteItemsRequest.TransactItems = writeItems;
+            _ = dynamoDBClient.TransactWriteItemsAsync(transactWriteItemsRequest).Result;
+        }
     }
 }
