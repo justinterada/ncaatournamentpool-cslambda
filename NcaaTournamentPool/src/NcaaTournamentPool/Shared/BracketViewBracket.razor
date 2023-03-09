@@ -1,0 +1,31 @@
+﻿<BracketViewRankDisplay Teams="BracketTeams[1]" PlayerColorsByUserId="PlayerColorsByUserId" />
+<BracketViewRankDisplay Teams="BracketTeams[16]" PlayerColorsByUserId="PlayerColorsByUserId" />
+<tr><td class="firstRoundSpacerCell"></td></tr>
+<BracketViewRankDisplay Teams="BracketTeams[8]" PlayerColorsByUserId="PlayerColorsByUserId" />
+<BracketViewRankDisplay Teams="BracketTeams[9]" PlayerColorsByUserId="PlayerColorsByUserId" />
+<tr><td class="firstRoundSpacerCell"></td></tr>
+<BracketViewRankDisplay Teams="BracketTeams[5]" PlayerColorsByUserId="PlayerColorsByUserId" />
+<BracketViewRankDisplay Teams="BracketTeams[12]" PlayerColorsByUserId="PlayerColorsByUserId" />
+<tr><td class="firstRoundSpacerCell"></td></tr>
+<BracketViewRankDisplay Teams="BracketTeams[4]" PlayerColorsByUserId="PlayerColorsByUserId" />
+<BracketViewRankDisplay Teams="BracketTeams[13]" PlayerColorsByUserId="PlayerColorsByUserId" />
+<tr><td class="firstRoundSpacerCell"></td></tr>
+<BracketViewRankDisplay Teams="BracketTeams[6]" PlayerColorsByUserId="PlayerColorsByUserId" />
+<BracketViewRankDisplay Teams="BracketTeams[11]" PlayerColorsByUserId="PlayerColorsByUserId" />
+<tr><td class="firstRoundSpacerCell"></td></tr>
+<BracketViewRankDisplay Teams="BracketTeams[3]" PlayerColorsByUserId="PlayerColorsByUserId" />
+<BracketViewRankDisplay Teams="BracketTeams[14]" PlayerColorsByUserId="PlayerColorsByUserId" />
+<tr><td class="firstRoundSpacerCell"></td></tr>
+<BracketViewRankDisplay Teams="BracketTeams[7]" PlayerColorsByUserId="PlayerColorsByUserId" />
+<BracketViewRankDisplay Teams="BracketTeams[10]" PlayerColorsByUserId="PlayerColorsByUserId" />
+<tr><td class="firstRoundSpacerCell"></td></tr>
+<BracketViewRankDisplay Teams="BracketTeams[2]" PlayerColorsByUserId="PlayerColorsByUserId" />
+<BracketViewRankDisplay Teams="BracketTeams[15]" PlayerColorsByUserId="PlayerColorsByUserId" />
+@code {
+    [Parameter]
+    public Dictionary<int, List<Team>> BracketTeams { get; set; }
+
+    [Parameter]
+    public Dictionary<int, string> PlayerColorsByUserId { get; set; }
+}
+
