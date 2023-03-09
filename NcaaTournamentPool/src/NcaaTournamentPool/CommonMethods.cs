@@ -213,8 +213,8 @@ namespace NcaaTournamentPool
 
             var teamsTableScan = teamsTable.Scan(teamsFilter);
             var teamsRetrieved = teamsTableScan.GetRemainingAsync().Result;
+            teamsRetrieved.Sort((x, y) => x["s-curve-rank"].AsInt().CompareTo(y["s-curve-rank"].AsInt()));
             List<Team> teams = new List<Team>();
-
             foreach (Document teamDocument in teamsRetrieved)
             {
                 teams.Add(new Team(teamDocument));
@@ -267,8 +267,8 @@ namespace NcaaTournamentPool
 
             var teamsTableScan = teamsTable.Scan(teamsFilter);
             var teamsRetrieved = await teamsTableScan.GetRemainingAsync();
+            teamsRetrieved.Sort((x, y) => x["s-curve-rank"].AsInt().CompareTo(y["s-curve-rank"].AsInt()));
             List<Team> teams = new List<Team>();
-
             foreach (Document teamDocument in teamsRetrieved)
             {
                 teams.Add(new Team(teamDocument));
@@ -286,8 +286,8 @@ namespace NcaaTournamentPool
 
             var teamsTableScan = teamsTable.Scan(scanConfig);
             var teamsRetrieved = await teamsTableScan.GetRemainingAsync();
+            teamsRetrieved.Sort((x, y) => x["s-curve-rank"].AsInt().CompareTo(y["s-curve-rank"].AsInt()));
             List<Team> teams = new List<Team>();
-
             foreach (Document teamDocument in teamsRetrieved)
             {
                 teams.Add(new Team(teamDocument));
@@ -546,7 +546,6 @@ namespace NcaaTournamentPool
             var teamsRetrieved = teamsTableScan.GetRemainingAsync().Result;
             teamsRetrieved.Sort((x, y) => x["s-curve-rank"].AsInt().CompareTo(y["s-curve-rank"].AsInt()));
             List<Team> teams = new List<Team>();
-
             foreach (Document teamDocument in teamsRetrieved)
             {
                 teams.Add(new Team()

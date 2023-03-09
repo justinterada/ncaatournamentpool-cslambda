@@ -1,0 +1,11 @@
+﻿@foreach (Team team in Teams)
+    {
+<tr><td class="firstRoundCell" style="background-color: @(team.pickedByPlayer != 0 ? PlayerColorsByUserId[team.pickedByPlayer] : "white"); @(team.eliminated ? "-ms-filter:'progid:DXImageTransform.Microsoft.Alpha(Opacity=30)';filter: alpha(opacity=30);opacity: .3;" : String.Empty)">@team.rank. @team.teamName (@team.wins - @team.losses)</td></tr>
+    }
+@code {
+    [Parameter]
+    public List<Team> Teams { get; set; }
+
+    [Parameter]
+    public Dictionary<int, string> PlayerColorsByUserId { get; set; }
+}

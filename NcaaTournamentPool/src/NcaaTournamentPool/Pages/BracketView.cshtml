@@ -1,0 +1,59 @@
+﻿@page
+@model NcaaTournamentPool.Pages.BracketViewModel
+@{
+    Layout = null;
+}
+<html>
+<head>
+    <title>Bracket View - Hit F5 to Refresh</title>
+    <link rel="stylesheet" href="~/css/bracket-view-style.css" />
+    <script type="text/javascript"><!--
+    @if (Request.Query["Refresh"] != "Off")
+    {
+        @Html.Raw("setTimeout('document.location.reload();', 30000);")
+    }
+    --></script>
+</head>
+<body>
+    <table>
+        <tr>
+            <td>
+                <table class="firstRoundTable">
+                    <th>@Model.CurrentStatus.brackets[1]</th>
+                    <component type="typeof(NcaaTournamentPool.Shared.BracketViewBracket)" render-mode="Static" param-bracketTeams="@Model.BracketOneTeams" param-playerColorsByUserId="@Model.PlayerColorsByUserId" />
+                </table>
+            </td>
+            <td>
+                <table class="firstRoundTable">
+                    <th>@Model.CurrentStatus.brackets[4]</th>
+                    <component type="typeof(NcaaTournamentPool.Shared.BracketViewBracket)" render-mode="Static" param-bracketTeams="@Model.BracketFourTeams" param-playerColorsByUserId="@Model.PlayerColorsByUserId" />
+                </table>
+            </td>
+            <td>
+                <table class="firstRoundTable">
+                    <th>@Model.CurrentStatus.brackets[2]</th>
+                    <component type="typeof(NcaaTournamentPool.Shared.BracketViewBracket)" render-mode="Static" param-bracketTeams="@Model.BracketTwoTeams" param-playerColorsByUserId="@Model.PlayerColorsByUserId" />
+                </table>
+            </td>
+            <td>
+                <table class="firstRoundTable">
+                    <th>@Model.CurrentStatus.brackets[3]</th>
+                    <component type="typeof(NcaaTournamentPool.Shared.BracketViewBracket)" render-mode="Static" param-bracketTeams="@Model.BracketThreeTeams" param-playerColorsByUserId="@Model.PlayerColorsByUserId" />
+                </table>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="4" align="center">
+                <table class="legendTable">
+                    <tr>
+                        @foreach (Player thisplayer in Model.CurrentStatus.players)
+                        {
+                            <td bgcolor="@thisplayer.color">@thisplayer.name</td>
+                        }
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
