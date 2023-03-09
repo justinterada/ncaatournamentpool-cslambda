@@ -83,6 +83,14 @@ namespace NcaaTournamentPool.Controllers
             return AcceptedAtAction(null);
         }
 
+        [HttpPost("eliminateteams")]
+        public IActionResult EliminateTeams([FromBody] EliminatedTeamSelection eliminatedTeams)
+        {
+            CommonMethods.setEliminatedTeams(eliminatedTeams.EliminatedTeams);
+
+            return AcceptedAtAction(null);
+        }
+
         // PUT api/draft/5
         [HttpPut("{id}")]
         public void Put(int id, [FromBody]string value)

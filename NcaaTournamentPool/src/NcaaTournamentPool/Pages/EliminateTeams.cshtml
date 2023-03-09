@@ -1,0 +1,44 @@
+﻿@page
+@model NcaaTournamentPool.Pages.EliminateTeamsModel
+@{
+    ViewData["Title"] = "Eliminate Teams";
+}
+
+<div id="bracket1" style="float:left; width: 25%;">
+    <h2 id="bracket1Header">@Model.CurrentStatus.brackets[1]</h2>
+    <component type="typeof(NcaaTournamentPool.Shared.Bracket)" render-mode="Static" param-bracketTeams="@Model.BracketOneTeams" param-players="@Model.Players" />
+</div>
+<div id="bracket4" style="float:left; width: 25%;">
+    <h2 id="bracket4Header">@Model.CurrentStatus.brackets[4]</h2>
+    <component type="typeof(NcaaTournamentPool.Shared.Bracket)" render-mode="Static" param-bracketTeams="@Model.BracketFourTeams" param-players="@Model.Players" />
+</div>
+
+<div id="bracket2" style="float:left; width: 25%;">
+    <h2 id="bracket2Header">@Model.CurrentStatus.brackets[2]</h2>
+    <component type="typeof(NcaaTournamentPool.Shared.Bracket)" render-mode="Static" param-bracketTeams="@Model.BracketTwoTeams" param-players="@Model.Players" />
+</div>
+<div id="bracket3" style="float:left; width: 25%;">
+    <h2 id="bracket3Header">@Model.CurrentStatus.brackets[3]</h2>
+    <component type="typeof(NcaaTournamentPool.Shared.Bracket)" render-mode="Static" param-bracketTeams="@Model.BracketThreeTeams" param-players="@Model.Players" />
+</div>
+
+<p><button id="updateEliminationStatus" onclick="submit();">Update Elimination Status</button></p>
+
+@section Styles
+{
+    <style>
+        .eliminated {
+            color: red;
+        }
+    </style>
+}
+
+@section Scripts
+{
+    <script language="javascript" src="~/js/EliminateTeams.js" type="text/javascript"></script>
+    <script type="text/javascript">
+    $(document).ready(onReady);
+
+    var allTeams = @Html.Raw(JsonHelper.Serialize(Model.AllTeamsArray));
+    </script>
+}
